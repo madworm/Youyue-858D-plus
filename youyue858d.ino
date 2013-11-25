@@ -15,7 +15,7 @@
 
 /*
  * PC3: TIP122.base --> FAN (OK)
- * PC0: ADC <-- amplif. thermo couple voltage
+ * PC0: ADC <-- amplif. thermo couple voltage (A0 in Arduino lingo)
  * PB1: opto-triac driver (OK) !! THIS IS DANGEROUS TO USE !!
  *
  * PB0: 7-seg digit 0 (OK)
@@ -62,7 +62,12 @@
 #define SW1_PRESSED ( !(PINB & _BV(PB2)) )
 #define REEDSW_CLOSED ( !(PINB & _BV(PB4)) )
 
+#define SHOW_SETPOINT_TIMEOUT 4000UL
+
 uint16_t number = 0;
+uint16_t thermo_raw = 0;
+uint16_t temperature = 0;
+uint32_t button_input_time = 0;
 
 uint8_t framebuffer[3] = { 0x00, 0x00, 0x00 };
 
@@ -94,9 +99,14 @@ void loop(void)
 
 	while (1) {
 
+		thermo_raw = analogRead(A0);
+
+		// convert the raw thermo-couple value to temperature in °C
+		temperature = thermo_raw;
+
 		HEATER_OFF;
 
-		if (REEDSW_CLOSED) {
+		if (REEDSW_CLOSED && (temperature < 100)) {
 			FAN_OFF;
 		} else {
 			FAN_ON;
@@ -106,13 +116,20 @@ void loop(void)
 			HEATER_ON;
 		} else if (SW0_PRESSED && (number < 500UL)) {
 			number++;
+			button_input_time = millis();
 			delay(5);
 		} else if (SW1_PRESSED && (number > 0)) {
 			number--;
+			button_input_time = millis();
 			delay(5);
 		}
 
-		display_number(number);
+		if ((millis() - button_input_time) < SHOW_SETPOINT_TIMEOUT) {
+			display_number(number);	// show temperature setpoint
+		} else {
+			display_number(temperature);
+		}
+
 	}
 
 }
