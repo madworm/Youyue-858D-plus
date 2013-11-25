@@ -1,8 +1,19 @@
+
+PCB text
+========
+
+858D V4.1
+20130421
+
+
+
 /*
  * This is a custom firmware for my 'Youyue 858D+' hot-air sodlering station.
  * It may or may not be useful to you, always double check if you use it.
  *
- * PCB version: XXXX (fix this)
+ * PCB version: 858D V4.1
+ * Date code:   20130421
+ *
  * Other identifiers (see images)
  *
  * 2013 - Robert Spitzenpfeil
