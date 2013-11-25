@@ -63,10 +63,11 @@
 #define REEDSW_CLOSED ( !(PINB & _BV(PB4)) )
 
 #define SHOW_SETPOINT_TIMEOUT 4000UL
+#define BUTTON_LOCKOUT_TIME 10UL
 
-uint16_t number = 0;
 uint16_t thermo_raw = 0;
 uint16_t temperature = 0;
+uint16_t temperature_setpoint = 0;
 uint32_t button_input_time = 0;
 
 uint8_t framebuffer[3] = { 0x00, 0x00, 0x00 };
@@ -98,13 +99,12 @@ void loop(void)
 	setup_timer1_ctc();
 
 	while (1) {
+		HEATER_OFF;
 
 		thermo_raw = analogRead(A0);
 
 		// convert the raw thermo-couple value to temperature in °C
 		temperature = thermo_raw;
-
-		HEATER_OFF;
 
 		if (REEDSW_CLOSED && (temperature < 100)) {
 			FAN_OFF;
@@ -112,20 +112,23 @@ void loop(void)
 			FAN_ON;
 		}
 
-		if (SW0_PRESSED && SW1_PRESSED) {
-			HEATER_ON;
-		} else if (SW0_PRESSED && (number < 500UL)) {
-			number++;
-			button_input_time = millis();
-			delay(5);
-		} else if (SW1_PRESSED && (number > 0)) {
-			number--;
-			button_input_time = millis();
-			delay(5);
+		if ((millis() - button_input_time) > BUTTON_LOCKOUT_TIME) {
+
+			if (SW0_PRESSED && SW1_PRESSED) {
+				HEATER_ON;
+				button_input_time = millis();
+			} else if (SW0_PRESSED && (temperature_setpoint < 500UL)) {
+				temperature_setpoint++;
+				button_input_time = millis();
+			} else if (SW1_PRESSED && (temperature_setpoint > 0)) {
+				temperature_setpoint--;
+				button_input_time = millis();
+			}
+
 		}
 
 		if ((millis() - button_input_time) < SHOW_SETPOINT_TIMEOUT) {
-			display_number(number);	// show temperature setpoint
+			display_number(temperature_setpoint);	// show temperature setpoint
 		} else {
 			display_number(temperature);
 		}
