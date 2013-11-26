@@ -58,23 +58,27 @@
 // YOU CAN START A FIRE AND DO A LOT OF HARM WITH
 // THE HEATER / TRIAC COMMANDS
 #define TRIAC_ON ( PORTB &= ~_BV(PB1) )
-#define HEATER_ON TRIAC_OFF
+#define HEATER_ON TRIAC_ON
 #define TRIAC_OFF ( PORTB |= _BV(PB1) )
 #define HEATER_OFF TRIAC_OFF
 
 #define SW0_PRESSED ( !(PINB & _BV(PB5)) )
 #define SW1_PRESSED ( !(PINB & _BV(PB2)) )
 #define REEDSW_CLOSED ( !(PINB & _BV(PB4)) )
+#define REEDSW_OPEN ( PINB & _BV(PB4) )
 
 #define SHOW_SETPOINT_TIMEOUT 4000UL
 #define BUTTON_LOCKOUT_TIME 50UL
 
 #define FAN_SPEED_MIN 145
-#define FAN_SPEED_MAX 345
-#define FAN_SPEED_AVERAGES 50
-#define SHOW_FAN_SPEED_TIMEOUT 4000UL
+#define FAN_SPEED_MAX 347
+#define FAN_SPEED_AVERAGES 500
+#define SHOW_FAN_SPEED_TIMEOUT 1000UL
 
-#define TEMPERATURE_AVERAGES 50
+#define DUTY_CYCLE_INC_DELAY 150
+#define DUTY_CYCLE_DEC_DELAY 50
+
+#define TEMPERATURE_AVERAGES 100
 
 uint16_t temperature_accu = 0;
 uint16_t temperature_average = 0;
@@ -85,6 +89,9 @@ uint32_t fan_speed_change_time = 0;
 uint8_t fan_speed_average = 0;
 uint8_t fan_speed_average_previous = 0;
 uint16_t fan_speed_accu = 0;
+
+uint32_t last_duty_cycle_inc_time = 0;
+uint32_t last_duty_cycle_dec_time = 0;
 
 uint8_t framebuffer[3] = { 0x00, 0x00, 0x00 };
 
@@ -110,7 +117,7 @@ void setup(void)
 
 void loop(void)
 {
-	segm_test();
+	//segm_test();
 	fan_test();
 	//char_test();
 
@@ -118,6 +125,44 @@ void loop(void)
 
 	while (1) {
 		HEATER_OFF;
+
+		static uint8_t heater_ctr = 0;
+		static uint8_t heater_duty_cycle = 0;
+
+		if (REEDSW_OPEN) {
+			// !! DANGER !!
+			FAN_ON;
+
+			if ((temperature_average < temperature_setpoint)
+			    && ((millis() - last_duty_cycle_inc_time) >
+				DUTY_CYCLE_INC_DELAY)) {
+				if (heater_duty_cycle < 255) {
+					heater_duty_cycle++;
+					last_duty_cycle_inc_time = millis();
+				}
+			} else if ((temperature_average > temperature_setpoint)
+				   && ((millis() - last_duty_cycle_dec_time) >
+				       DUTY_CYCLE_DEC_DELAY)) {
+				if (heater_duty_cycle > 0) {
+					heater_duty_cycle--;
+					last_duty_cycle_dec_time = millis();
+				}
+			}
+
+			if (heater_ctr < heater_duty_cycle) {
+				HEATER_ON;
+			} else {
+				HEATER_OFF;
+			}
+
+			heater_ctr++;
+			if (heater_ctr == 255) {
+				heater_ctr = 0;
+			}
+
+		} else {
+			HEATER_OFF;
+		}
 
 		static uint16_t temp_avg_ctr = 0;
 		static uint16_t fan_speed_avg_ctr = 0;
@@ -147,9 +192,11 @@ void loop(void)
 			fan_speed_average_previous = fan_speed_average;
 		}
 
-		if (REEDSW_CLOSED && (temperature_average < 100)) {
+		if (temperature_average > 55) {
+			FAN_ON;
+		} else if (REEDSW_CLOSED && (temperature_average < 40)) {
 			FAN_OFF;
-		} else {
+		} else if (REEDSW_OPEN) {
 			FAN_ON;
 		}
 
@@ -176,7 +223,7 @@ void loop(void)
 			 SHOW_FAN_SPEED_TIMEOUT) && FAN_IS_ON) {
 			display_number(fan_speed_average);
 		} else {
-			if (temperature_average < 4) {
+			if (temperature_average < 35) {
 				display_number(6666);
 			} else {
 				display_number(temperature_average);
