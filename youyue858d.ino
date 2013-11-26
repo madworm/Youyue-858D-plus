@@ -7,6 +7,8 @@
  *
  * Other identifiers (see images)
  *
+ * V1.00 with PD temperature control
+ *
  * 2013 - Robert Spitzenpfeil
  *
  * Licence: GNU GPL v2
@@ -14,7 +16,7 @@
  */
 
 /*
- * PC5: FAN-speed (A5 in Arduino lingo)
+ * PC5: FAN-speed (A5 in Arduino lingo) - NOT USED SO FAR
  * PC3: TIP122.base --> FAN (OK)
  * PC0: ADC <-- amplif. thermo couple voltage (A0 in Arduino lingo)
  * #21: AREF <--- about 2.5V as analog reference for ADC
@@ -64,34 +66,33 @@
 
 #define SW0_PRESSED ( !(PINB & _BV(PB5)) )
 #define SW1_PRESSED ( !(PINB & _BV(PB2)) )
+
 #define REEDSW_CLOSED ( !(PINB & _BV(PB4)) )
 #define REEDSW_OPEN ( PINB & _BV(PB4) )
 
-#define SHOW_SETPOINT_TIMEOUT 4000UL
+#define SHOW_SETPOINT_TIMEOUT 1500UL
 #define BUTTON_LOCKOUT_TIME 50UL
 
-#define FAN_SPEED_MIN 145
-#define FAN_SPEED_MAX 347
-#define FAN_SPEED_AVERAGES 500
-#define SHOW_FAN_SPEED_TIMEOUT 1000UL
+#define T_LOOP_INV_P_CONST 60
+#define T_LOOP_D_CONST 25
+#define TEMPERATURE_CALIB_OFFSET 33
 
-#define DUTY_CYCLE_INC_DELAY 150
-#define DUTY_CYCLE_DEC_DELAY 50
+#define TEMPERATURE_AVERAGES 1000UL
+#define MIN_TEMPERATURE 100
+#define MAX_TEMPERATURE 500UL
 
-#define TEMPERATURE_AVERAGES 100
+#define SAFE_TO_TOUCH_TEMPERATURE 40
+#define FAN_OFF_TEMPERATURE 45
+#define FAN_ON_TEMPERATURE 60
 
-uint16_t temperature_accu = 0;
+uint16_t temperature_inst = 0;
+uint16_t temperature_inst_previous = 0;
+uint32_t temperature_accu = 0;
 uint16_t temperature_average = 0;
-uint16_t temperature_setpoint = 0;
+uint16_t temperature_average_previous = 0;
+uint16_t temperature_setpoint = MIN_TEMPERATURE;
+
 uint32_t button_input_time = 0;
-
-uint32_t fan_speed_change_time = 0;
-uint8_t fan_speed_average = 0;
-uint8_t fan_speed_average_previous = 0;
-uint16_t fan_speed_accu = 0;
-
-uint32_t last_duty_cycle_inc_time = 0;
-uint32_t last_duty_cycle_dec_time = 0;
 
 uint8_t framebuffer[3] = { 0x00, 0x00, 0x00 };
 
@@ -127,26 +128,25 @@ void loop(void)
 		HEATER_OFF;
 
 		static uint8_t heater_ctr = 0;
-		static uint8_t heater_duty_cycle = 0;
+		static int16_t heater_duty_cycle = 0;
 
-		if (REEDSW_OPEN) {
+		temperature_inst_previous = temperature_inst;
+		temperature_inst = analogRead(A0) + TEMPERATURE_CALIB_OFFSET;	// approx. temp in °C
+
+		if (REEDSW_OPEN && (temperature_setpoint >= MIN_TEMPERATURE)) {
 			// !! DANGER !!
 			FAN_ON;
 
-			if ((temperature_average < temperature_setpoint)
-			    && ((millis() - last_duty_cycle_inc_time) >
-				DUTY_CYCLE_INC_DELAY)) {
-				if (heater_duty_cycle < 255) {
-					heater_duty_cycle++;
-					last_duty_cycle_inc_time = millis();
-				}
-			} else if ((temperature_average > temperature_setpoint)
-				   && ((millis() - last_duty_cycle_dec_time) >
-				       DUTY_CYCLE_DEC_DELAY)) {
-				if (heater_duty_cycle > 0) {
-					heater_duty_cycle--;
-					last_duty_cycle_dec_time = millis();
-				}
+			heater_duty_cycle +=
+			    (int16_t) (((float)(temperature_setpoint) -
+					(float)(temperature_inst)) /
+				       T_LOOP_INV_P_CONST +
+				       ((float)(temperature_inst_previous) -
+					(float)(temperature_inst)) *
+				       T_LOOP_D_CONST);
+
+			if (heater_duty_cycle < 0) {
+				heater_duty_cycle = 0;
 			}
 
 			if (heater_ctr < heater_duty_cycle) {
@@ -165,36 +165,23 @@ void loop(void)
 		}
 
 		static uint16_t temp_avg_ctr = 0;
-		static uint16_t fan_speed_avg_ctr = 0;
 
-		temperature_accu += analogRead(A0);
+		temperature_accu += (uint32_t) (temperature_inst);
 		temp_avg_ctr++;
 
 		if (temp_avg_ctr == TEMPERATURE_AVERAGES) {
+			temperature_average_previous = temperature_average;
 			temperature_average =
-			    temperature_accu / TEMPERATURE_AVERAGES;
+			    (uint16_t) (temperature_accu /
+					TEMPERATURE_AVERAGES);
 			temperature_accu = 0;
 			temp_avg_ctr = 0;
 		}
 
-		fan_speed_accu +=
-		    map(analogRead(A5), FAN_SPEED_MIN, FAN_SPEED_MAX, 0, 100);
-		fan_speed_avg_ctr++;
-
-		if (fan_speed_avg_ctr == FAN_SPEED_AVERAGES) {
-			fan_speed_average = fan_speed_accu / FAN_SPEED_AVERAGES;
-			fan_speed_accu = 0;
-			fan_speed_avg_ctr = 0;
-		}
-
-		if (fan_speed_average != fan_speed_average_previous) {
-			fan_speed_change_time = millis();
-			fan_speed_average_previous = fan_speed_average;
-		}
-
-		if (temperature_average > 55) {
+		if (temperature_average >= FAN_ON_TEMPERATURE) {
 			FAN_ON;
-		} else if (REEDSW_CLOSED && (temperature_average < 40)) {
+		} else if (REEDSW_CLOSED
+			   && (temperature_average <= FAN_OFF_TEMPERATURE)) {
 			FAN_OFF;
 		} else if (REEDSW_OPEN) {
 			FAN_ON;
@@ -206,10 +193,11 @@ void loop(void)
 				HEATER_ON;
 				button_input_time = millis();
 			} else if (SW0_PRESSED
-				   && (temperature_setpoint < 500UL)) {
+				   && (temperature_setpoint <
+				       MAX_TEMPERATURE)) {
 				temperature_setpoint++;
 				button_input_time = millis();
-			} else if (SW1_PRESSED && (temperature_setpoint > 0)) {
+			} else if (SW1_PRESSED && (temperature_setpoint >= MIN_TEMPERATURE)) {	// allows cold air
 				temperature_setpoint--;
 				button_input_time = millis();
 			}
@@ -218,12 +206,8 @@ void loop(void)
 
 		if ((millis() - button_input_time) < SHOW_SETPOINT_TIMEOUT) {
 			display_number(temperature_setpoint);	// show temperature setpoint
-		} else
-		    if (((millis() - fan_speed_change_time) <
-			 SHOW_FAN_SPEED_TIMEOUT) && FAN_IS_ON) {
-			display_number(fan_speed_average);
 		} else {
-			if (temperature_average < 35) {
+			if (temperature_average <= SAFE_TO_TOUCH_TEMPERATURE) {
 				display_number(6666);
 			} else {
 				display_number(temperature_average);
@@ -308,7 +292,7 @@ void display_char(uint8_t digit, uint8_t character)
 		PORTD = ~0x6D;	// '5'              
 		break;
 	case 6:
-		PORTD = ~0x6E;	// '6'              
+		PORTD = ~0x6F;	// '6'              
 		break;
 	case 7:
 		PORTD = ~0xA1;	// '7'              
