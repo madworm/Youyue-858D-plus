@@ -7,7 +7,7 @@
  *
  * Other identifiers (see images)
  *
- * V1.00 with PD temperature control
+ * V1.01 with PD temperature control + heater indicator
  *
  * 2013 - Robert Spitzenpfeil
  *
@@ -73,8 +73,8 @@
 #define SHOW_SETPOINT_TIMEOUT 1500UL
 #define BUTTON_LOCKOUT_TIME 50UL
 
-#define T_LOOP_INV_P_CONST 60
-#define T_LOOP_D_CONST 25
+#define T_LOOP_P_CONST 0.003
+#define T_LOOP_D_CONST 28
 #define TEMPERATURE_CALIB_OFFSET 33
 
 #define TEMPERATURE_AVERAGES 1000UL
@@ -94,7 +94,7 @@ uint16_t temperature_setpoint = MIN_TEMPERATURE;
 
 uint32_t button_input_time = 0;
 
-uint8_t framebuffer[3] = { 0x00, 0x00, 0x00 };
+uint8_t framebuffer[4] = { 0xFF, 0xFF, 0xFF, 0xFF };
 
 void setup(void)
 {
@@ -128,7 +128,8 @@ void loop(void)
 		HEATER_OFF;
 
 		static uint8_t heater_ctr = 0;
-		static int16_t heater_duty_cycle = 0;
+		static uint16_t heater_duty_cycle = 0;
+		static float heater_duty_cycle_tmp = 0;
 
 		temperature_inst_previous = temperature_inst;
 		temperature_inst = analogRead(A0) + TEMPERATURE_CALIB_OFFSET;	// approx. temp in °C
@@ -137,22 +138,30 @@ void loop(void)
 			// !! DANGER !!
 			FAN_ON;
 
-			heater_duty_cycle +=
-			    (int16_t) (((float)(temperature_setpoint) -
-					(float)(temperature_inst)) /
-				       T_LOOP_INV_P_CONST +
-				       ((float)(temperature_inst_previous) -
-					(float)(temperature_inst)) *
-				       T_LOOP_D_CONST);
+			heater_duty_cycle_tmp +=
+			    ((float)(temperature_setpoint) -
+			     (float)(temperature_inst)) *
+			    (float)(T_LOOP_P_CONST) +
+			    ((float)(temperature_inst_previous) -
+			     (float)(temperature_inst)) *
+			    (float)(T_LOOP_D_CONST);
 
-			if (heater_duty_cycle < 0) {
-				heater_duty_cycle = 0;
+			if (heater_duty_cycle_tmp < 0) {
+				heater_duty_cycle_tmp = 0;
+			}
+
+			heater_duty_cycle = (uint16_t) (heater_duty_cycle_tmp);
+
+			if (heater_duty_cycle > 255) {
+				heater_duty_cycle = 255;
 			}
 
 			if (heater_ctr < heater_duty_cycle) {
+				set_dot();
 				HEATER_ON;
 			} else {
 				HEATER_OFF;
+				clear_dot();
 			}
 
 			heater_ctr++;
@@ -162,6 +171,7 @@ void loop(void)
 
 		} else {
 			HEATER_OFF;
+			clear_dot();
 		}
 
 		static uint16_t temp_avg_ctr = 0;
@@ -189,12 +199,8 @@ void loop(void)
 
 		if ((millis() - button_input_time) > BUTTON_LOCKOUT_TIME) {
 
-			if (SW0_PRESSED && SW1_PRESSED) {
-				HEATER_ON;
-				button_input_time = millis();
-			} else if (SW0_PRESSED
-				   && (temperature_setpoint <
-				       MAX_TEMPERATURE)) {
+			if (SW0_PRESSED
+			    && (temperature_setpoint < MAX_TEMPERATURE)) {
 				temperature_setpoint++;
 				button_input_time = millis();
 			} else if (SW1_PRESSED && (temperature_setpoint >= MIN_TEMPERATURE)) {	// allows cold air
@@ -211,11 +217,22 @@ void loop(void)
 				display_number(6666);
 			} else {
 				display_number(temperature_average);
+				//display_number(temperature_inst);
 			}
 		}
 
 	}
 
+}
+
+void set_dot(void)
+{
+	framebuffer[3] = '.';
+}
+
+void clear_dot(void)
+{
+	framebuffer[3] = 255;
 }
 
 void display_number(uint16_t number)
@@ -259,13 +276,16 @@ void display_char(uint8_t digit, uint8_t character)
 
 	switch (digit) {
 	case 0:
-		DIG0_ON;	// turn on digit #1
+		DIG0_ON;	// turn on digit #0
 		break;
 	case 1:
-		DIG1_ON;	// #2
+		DIG1_ON;	// #1
 		break;
 	case 2:
-		DIG2_ON;	// #3
+		DIG2_ON;	// #2
+		break;
+	case 3:
+		DIG0_ON;	// #0 for the dot
 		break;
 
 	default:
@@ -414,7 +434,7 @@ ISR(TIMER1_COMPA_vect)
 	display_char(digit, framebuffer[digit]);
 	digit++;
 
-	if (digit == 3) {
+	if (digit == 4) {
 		digit = 0;
 	}
 }
