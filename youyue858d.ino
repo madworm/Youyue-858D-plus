@@ -14,6 +14,7 @@
  */
 
 /*
+ * PC5: FAN-speed (A5 in Arduino lingo)
  * PC3: TIP122.base --> FAN (OK)
  * PC0: ADC <-- amplif. thermo couple voltage (A0 in Arduino lingo)
  * PB1: opto-triac driver (OK) !! THIS IS DANGEROUS TO USE !!
@@ -63,12 +64,24 @@
 #define REEDSW_CLOSED ( !(PINB & _BV(PB4)) )
 
 #define SHOW_SETPOINT_TIMEOUT 4000UL
-#define BUTTON_LOCKOUT_TIME 10UL
+#define BUTTON_LOCKOUT_TIME 50UL
 
-uint16_t thermo_raw = 0;
-uint16_t temperature = 0;
+#define FAN_SPEED_MIN 145
+#define FAN_SPEED_MAX 345
+#define FAN_SPEED_AVERAGES 50
+#define SHOW_FAN_SPEED_TIMEOUT 4000UL
+
+#define TEMPERATURE_AVERAGES 50
+
+uint16_t temperature_accu = 0;
+uint16_t temperature_average = 0;
 uint16_t temperature_setpoint = 0;
 uint32_t button_input_time = 0;
+
+uint32_t fan_speed_change_time = 0;
+uint8_t fan_speed_average = 0;
+uint8_t fan_speed_average_previous = 0;
+uint16_t fan_speed_accu = 0;
 
 uint8_t framebuffer[3] = { 0x00, 0x00, 0x00 };
 
@@ -100,13 +113,34 @@ void loop(void)
 
 	while (1) {
 		HEATER_OFF;
-
-		thermo_raw = analogRead(A0);
-
-		// convert the raw thermo-couple value to temperature in °C
-		temperature = thermo_raw;
-
-		if (REEDSW_CLOSED && (temperature < 100)) {
+                
+                static uint16_t temp_avg_ctr = 0;
+                static uint16_t fan_speed_avg_ctr = 0;
+                
+		temperature_accu += analogRead(A0);
+                temp_avg_ctr++;
+    
+                if(temp_avg_ctr == TEMPERATURE_AVERAGES) {
+                  temperature_average = temperature_accu / TEMPERATURE_AVERAGES;
+                  temperature_accu = 0;
+                  temp_avg_ctr = 0;
+                }
+                      
+      		fan_speed_accu += map(analogRead(A5),FAN_SPEED_MIN,FAN_SPEED_MAX,0,100);
+                fan_speed_avg_ctr++;
+    
+                if(fan_speed_avg_ctr == FAN_SPEED_AVERAGES) {
+                  fan_speed_average = fan_speed_accu / FAN_SPEED_AVERAGES;
+                  fan_speed_accu = 0;
+                  fan_speed_avg_ctr = 0;
+                }
+                
+                if(fan_speed_average != fan_speed_average_previous) {
+                  fan_speed_change_time = millis();
+                  fan_speed_average_previous = fan_speed_average;
+                }
+                
+		if (REEDSW_CLOSED && (temperature_average < 100)) {
 			FAN_OFF;
 		} else {
 			FAN_ON;
@@ -129,8 +163,10 @@ void loop(void)
 
 		if ((millis() - button_input_time) < SHOW_SETPOINT_TIMEOUT) {
 			display_number(temperature_setpoint);	// show temperature setpoint
-		} else {
-			display_number(temperature);
+		} else if ( (millis() - fan_speed_change_time) < SHOW_FAN_SPEED_TIMEOUT ) {
+                        display_number(fan_speed_average);
+                } else {
+			display_number(temperature_average);
 		}
 
 	}
