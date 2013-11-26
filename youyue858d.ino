@@ -17,6 +17,7 @@
  * PC5: FAN-speed (A5 in Arduino lingo)
  * PC3: TIP122.base --> FAN (OK)
  * PC0: ADC <-- amplif. thermo couple voltage (A0 in Arduino lingo)
+ * #21: AREF <--- about 2.5V as analog reference for ADC
  * PB1: opto-triac driver (OK) !! THIS IS DANGEROUS TO USE !!
  *
  * PB0: 7-seg digit 0 (OK)
@@ -40,6 +41,8 @@
 
 #define FAN_OFF ( PORTC |= _BV(PC3) )
 #define FAN_ON  ( PORTC &= ~_BV(PC3) )
+#define FAN_IS_ON ( !(PINC & _BV(PC3)) )
+#define FAN_IS_OFF ( PINC & _BV(PC3) )
 
 #define DIG0_OFF ( PORTB &= ~_BV(PB0) )
 #define DIG1_OFF ( PORTB &= ~_BV(PB7) )
@@ -101,6 +104,8 @@ void setup(void)
 
 	DDRD |= 0xFF;		// all as outputs (7-seg segments)
 	DDRB |= (_BV(PB0) | _BV(PB6) | _BV(PB7));	// 7-seg digits 1,2,3
+
+	analogReference(EXTERNAL);	// use external 2.5V as ADC reference voltage (VCC / 2)
 }
 
 void loop(void)
@@ -113,33 +118,35 @@ void loop(void)
 
 	while (1) {
 		HEATER_OFF;
-                
-                static uint16_t temp_avg_ctr = 0;
-                static uint16_t fan_speed_avg_ctr = 0;
-                
+
+		static uint16_t temp_avg_ctr = 0;
+		static uint16_t fan_speed_avg_ctr = 0;
+
 		temperature_accu += analogRead(A0);
-                temp_avg_ctr++;
-    
-                if(temp_avg_ctr == TEMPERATURE_AVERAGES) {
-                  temperature_average = temperature_accu / TEMPERATURE_AVERAGES;
-                  temperature_accu = 0;
-                  temp_avg_ctr = 0;
-                }
-                      
-      		fan_speed_accu += map(analogRead(A5),FAN_SPEED_MIN,FAN_SPEED_MAX,0,100);
-                fan_speed_avg_ctr++;
-    
-                if(fan_speed_avg_ctr == FAN_SPEED_AVERAGES) {
-                  fan_speed_average = fan_speed_accu / FAN_SPEED_AVERAGES;
-                  fan_speed_accu = 0;
-                  fan_speed_avg_ctr = 0;
-                }
-                
-                if(fan_speed_average != fan_speed_average_previous) {
-                  fan_speed_change_time = millis();
-                  fan_speed_average_previous = fan_speed_average;
-                }
-                
+		temp_avg_ctr++;
+
+		if (temp_avg_ctr == TEMPERATURE_AVERAGES) {
+			temperature_average =
+			    temperature_accu / TEMPERATURE_AVERAGES;
+			temperature_accu = 0;
+			temp_avg_ctr = 0;
+		}
+
+		fan_speed_accu +=
+		    map(analogRead(A5), FAN_SPEED_MIN, FAN_SPEED_MAX, 0, 100);
+		fan_speed_avg_ctr++;
+
+		if (fan_speed_avg_ctr == FAN_SPEED_AVERAGES) {
+			fan_speed_average = fan_speed_accu / FAN_SPEED_AVERAGES;
+			fan_speed_accu = 0;
+			fan_speed_avg_ctr = 0;
+		}
+
+		if (fan_speed_average != fan_speed_average_previous) {
+			fan_speed_change_time = millis();
+			fan_speed_average_previous = fan_speed_average;
+		}
+
 		if (REEDSW_CLOSED && (temperature_average < 100)) {
 			FAN_OFF;
 		} else {
@@ -151,7 +158,8 @@ void loop(void)
 			if (SW0_PRESSED && SW1_PRESSED) {
 				HEATER_ON;
 				button_input_time = millis();
-			} else if (SW0_PRESSED && (temperature_setpoint < 500UL)) {
+			} else if (SW0_PRESSED
+				   && (temperature_setpoint < 500UL)) {
 				temperature_setpoint++;
 				button_input_time = millis();
 			} else if (SW1_PRESSED && (temperature_setpoint > 0)) {
@@ -163,10 +171,16 @@ void loop(void)
 
 		if ((millis() - button_input_time) < SHOW_SETPOINT_TIMEOUT) {
 			display_number(temperature_setpoint);	// show temperature setpoint
-		} else if ( (millis() - fan_speed_change_time) < SHOW_FAN_SPEED_TIMEOUT ) {
-                        display_number(fan_speed_average);
-                } else {
-			display_number(temperature_average);
+		} else
+		    if (((millis() - fan_speed_change_time) <
+			 SHOW_FAN_SPEED_TIMEOUT) && FAN_IS_ON) {
+			display_number(fan_speed_average);
+		} else {
+			if (temperature_average < 4) {
+				display_number(6666);
+			} else {
+				display_number(temperature_average);
+			}
 		}
 
 	}
@@ -183,12 +197,19 @@ void display_number(uint16_t number)
 	uint8_t dig1 = 0;
 	uint8_t dig2 = 0;
 
-	temp1 = number - (number / 100) * 100;
-	temp2 = temp1 - (temp1 / 10) * 10;
+	if (number == 6666) {
+		dig0 = '-';
+		dig1 = '-';
+		dig2 = '-';
+	} else {
 
-	dig0 = (uint8_t) (temp2);
-	dig1 = (uint8_t) ((temp1 - temp2) / 10);
-	dig2 = (uint8_t) ((number - temp1) / 100);
+		temp1 = number - (number / 100) * 100;
+		temp2 = temp1 - (temp1 / 10) * 10;
+
+		dig0 = (uint8_t) (temp2);
+		dig1 = (uint8_t) ((temp1 - temp2) / 10);
+		dig2 = (uint8_t) ((number - temp1) / 100);
+	}
 
 	framebuffer[0] = dig0;
 	framebuffer[1] = dig1;
