@@ -7,7 +7,7 @@
  *
  * Other identifiers (see images)
  *
- * V1.01 with PD temperature control + heater indicator
+ * V1.02 with PD temperature control + heater indicator
  *
  * 2013 - Robert Spitzenpfeil
  *
@@ -16,11 +16,11 @@
  */
 
 /*
- * PC5: FAN-speed (A5 in Arduino lingo) - NOT USED SO FAR
+ * PC5: FAN-speed (A5 in Arduino lingo) - NOT USED SO FAR (OK)
  * PC3: TIP122.base --> FAN (OK)
- * PC0: ADC <-- amplif. thermo couple voltage (A0 in Arduino lingo)
+ * PC0: ADC <-- amplif. thermo couple voltage (A0 in Arduino lingo) (OK)
  * #21: AREF <--- about 2.5V as analog reference for ADC
- * PB1: opto-triac driver (OK) !! THIS IS DANGEROUS TO USE !!
+ * PB1: opto-triac driver !! THIS IS DANGEROUS TO USE !! (OK)
  *
  * PB0: 7-seg digit 0 (OK)
  * PB7: 7-seg digit 1 (OK)
@@ -75,10 +75,14 @@
 
 #define T_LOOP_P_CONST 0.003
 #define T_LOOP_D_CONST 28
+
+#define HEATER_DUTY_CYCLE_MAX 512UL
+#define PWM_CYCLES 512UL
 #define TEMPERATURE_CALIB_OFFSET 33
 
 #define TEMPERATURE_AVERAGES 1000UL
-#define MIN_TEMPERATURE 100
+#define TEMPERATURE_MAX_OVERSHOOT 5
+#define MIN_TEMPERATURE 65
 #define MAX_TEMPERATURE 500UL
 
 #define SAFE_TO_TOUCH_TEMPERATURE 40
@@ -114,6 +118,7 @@ void setup(void)
 	DDRB |= (_BV(PB0) | _BV(PB6) | _BV(PB7));	// 7-seg digits 1,2,3
 
 	analogReference(EXTERNAL);	// use external 2.5V as ADC reference voltage (VCC / 2)
+	// Serial.begin(9600);
 }
 
 void loop(void)
@@ -125,9 +130,12 @@ void loop(void)
 	setup_timer1_ctc();
 
 	while (1) {
+
+		// uint32_t start_time = micros();
+
 		HEATER_OFF;
 
-		static uint8_t heater_ctr = 0;
+		static uint16_t heater_ctr = 0;
 		static uint16_t heater_duty_cycle = 0;
 		static float heater_duty_cycle_tmp = 0;
 
@@ -152,20 +160,26 @@ void loop(void)
 
 			heater_duty_cycle = (uint16_t) (heater_duty_cycle_tmp);
 
-			if (heater_duty_cycle > 255) {
-				heater_duty_cycle = 255;
+			if (heater_duty_cycle > HEATER_DUTY_CYCLE_MAX) {
+				heater_duty_cycle = HEATER_DUTY_CYCLE_MAX;
 			}
 
 			if (heater_ctr < heater_duty_cycle) {
 				set_dot();
-				HEATER_ON;
+				if (temperature_average < (temperature_setpoint + TEMPERATURE_MAX_OVERSHOOT)) {	// hard limit for top temperature
+					HEATER_ON;
+				} else {
+					HEATER_OFF;
+					heater_duty_cycle_tmp /= 2; // "restart" PD loop
+					clear_dot();
+				}
 			} else {
 				HEATER_OFF;
 				clear_dot();
 			}
 
 			heater_ctr++;
-			if (heater_ctr == 255) {
+			if (heater_ctr == PWM_CYCLES) {
 				heater_ctr = 0;
 			}
 
@@ -220,6 +234,9 @@ void loop(void)
 				//display_number(temperature_inst);
 			}
 		}
+
+		// uint32_t end_time = micros();
+		// Serial.println(end_time - start_time);
 
 	}
 
