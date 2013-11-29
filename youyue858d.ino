@@ -7,7 +7,7 @@
  *
  * Other identifiers (see images)
  *
- * V1.02 with PD temperature control + heater indicator
+ * V1.03 with PD temperature control + heater indicator
  *
  * 2013 - Robert Spitzenpfeil
  *
@@ -230,8 +230,12 @@ void loop(void)
 			if (temperature_average <= SAFE_TO_TOUCH_TEMPERATURE) {
 				display_number(6666);
 			} else {
-				display_number(temperature_average);
-				//display_number(temperature_inst);
+                                if (temperature_average > 800) {
+                                  display_number(9999); // probably the wand is not connected or thermo couple has failed
+                                } else {
+      				  display_number(temperature_average);
+				  //display_number(temperature_inst);
+                                }
 			}
 		}
 
@@ -262,7 +266,11 @@ void display_number(uint16_t number)
 	uint8_t dig1 = 0;
 	uint8_t dig2 = 0;
 
-	if (number == 6666) {
+        if (number == 9999) {
+		dig0 = 'N';
+		dig1 = 'A';
+		dig2 = 'F';
+        } else if (number == 6666) {
 		dig0 = '-';
 		dig1 = '-';
 		dig2 = '-';
@@ -352,6 +360,12 @@ void display_char(uint8_t digit, uint8_t character)
 	case 'F':
 		PORTD = ~0x4B;	// 'F'
 		break;
+        case 'A':
+                PORTD = ~0xEB;  // 'A'
+                break;
+        case 'N':             
+                PORTD = ~0xAB;  // 'N'
+                break;
 	case 255:
 		PORTD = 0xFF;	// segments OFF
 		break;
