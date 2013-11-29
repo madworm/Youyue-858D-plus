@@ -7,7 +7,7 @@
  *
  * Other identifiers (see images)
  *
- * V1.03 with PD temperature control + heater indicator
+ * V1.04 with PD temperature control + heater indicator + persistent setpoint storage + better button handling
  *
  * 2013 - Robert Spitzenpfeil
  *
@@ -41,6 +41,8 @@
  *
  */
 
+#include <EEPROM.h>
+
 #define FAN_OFF ( PORTC |= _BV(PC3) )
 #define FAN_ON  ( PORTC &= ~_BV(PC3) )
 #define FAN_IS_ON ( !(PINC & _BV(PC3)) )
@@ -70,35 +72,27 @@
 #define REEDSW_CLOSED ( !(PINB & _BV(PB4)) )
 #define REEDSW_OPEN ( PINB & _BV(PB4) )
 
-#define SHOW_SETPOINT_TIMEOUT 1500UL
-#define BUTTON_LOCKOUT_TIME 50UL
+#define SHOW_SETPOINT_TIMEOUT 2000UL
 
 #define T_LOOP_P_CONST 0.003
 #define T_LOOP_D_CONST 28
 
-#define HEATER_DUTY_CYCLE_MAX 512UL
-#define PWM_CYCLES 512UL
+#define HEATER_DUTY_CYCLE_MAX 800UL
+#define PWM_CYCLES 800UL
 #define TEMPERATURE_CALIB_OFFSET 33
 
 #define TEMPERATURE_AVERAGES 1000UL
-#define TEMPERATURE_MAX_OVERSHOOT 5
-#define MIN_TEMPERATURE 65
-#define MAX_TEMPERATURE 500UL
+#define TEMPERATURE_MAX_OVERSHOOT 8
+#define TEMPERATURE_REACHED_MARGIN 4
+#define MIN_TEMPERATURE_SP 65
+#define MAX_TEMPERATURE_SP 500UL
+#define MAX_TEMPERATURE_ERR 600UL
 
 #define SAFE_TO_TOUCH_TEMPERATURE 40
 #define FAN_OFF_TEMPERATURE 45
 #define FAN_ON_TEMPERATURE 60
 
-uint16_t temperature_inst = 0;
-uint16_t temperature_inst_previous = 0;
-uint32_t temperature_accu = 0;
-uint16_t temperature_average = 0;
-uint16_t temperature_average_previous = 0;
-uint16_t temperature_setpoint = MIN_TEMPERATURE;
-
-uint32_t button_input_time = 0;
-
-uint8_t framebuffer[4] = { 0xFF, 0xFF, 0xFF, 0xFF };
+uint8_t framebuffer[6] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };	// dig0, dig1, dig2, dot0, dot1, dot2 - couting starts from right side
 
 void setup(void)
 {
@@ -118,7 +112,6 @@ void setup(void)
 	DDRB |= (_BV(PB0) | _BV(PB6) | _BV(PB7));	// 7-seg digits 1,2,3
 
 	analogReference(EXTERNAL);	// use external 2.5V as ADC reference voltage (VCC / 2)
-	// Serial.begin(9600);
 }
 
 void loop(void)
@@ -129,20 +122,38 @@ void loop(void)
 
 	setup_timer1_ctc();
 
+	uint16_t tmp = (EEPROM.read(0) << 8) | EEPROM.read(1);
+	uint16_t temperature_setpoint;
+
+	if ((tmp >= MIN_TEMPERATURE_SP) && (tmp <= MAX_TEMPERATURE_SP)) {
+		temperature_setpoint = tmp;
+	} else {
+		temperature_setpoint = MIN_TEMPERATURE_SP;
+	}
+
 	while (1) {
+		static uint16_t temperature_inst = 0;
+		static uint16_t temperature_inst_previous = 0;
+		static uint32_t temperature_accu = 0;
+		static uint16_t temperature_average = 0;
+		static uint16_t temperature_average_previous = 0;
 
-		// uint32_t start_time = micros();
-
-		HEATER_OFF;
+		static uint32_t button_input_time = 0;
 
 		static uint16_t heater_ctr = 0;
 		static uint16_t heater_duty_cycle = 0;
 		static float heater_duty_cycle_tmp = 0;
 
+		static uint16_t button_counter = 0;
+
+		static uint8_t temperature_setpoint_saved = 0;
+		static uint32_t temperature_setpoint_saved_time = 0;
+
 		temperature_inst_previous = temperature_inst;
 		temperature_inst = analogRead(A0) + TEMPERATURE_CALIB_OFFSET;	// approx. temp in °C
 
-		if (REEDSW_OPEN && (temperature_setpoint >= MIN_TEMPERATURE)) {
+		if (REEDSW_OPEN && (temperature_setpoint >= MIN_TEMPERATURE_SP)
+		    && (temperature_average < MAX_TEMPERATURE_ERR)) {
 			// !! DANGER !!
 			FAN_ON;
 
@@ -170,7 +181,7 @@ void loop(void)
 					HEATER_ON;
 				} else {
 					HEATER_OFF;
-					heater_duty_cycle_tmp /= 2; // "restart" PD loop
+					heater_duty_cycle_tmp /= 2;	// "restart" PD loop
 					clear_dot();
 				}
 			} else {
@@ -211,37 +222,89 @@ void loop(void)
 			FAN_ON;
 		}
 
-		if ((millis() - button_input_time) > BUTTON_LOCKOUT_TIME) {
+		if (SW0_PRESSED) {
+			button_input_time = millis();
+			button_counter++;
 
-			if (SW0_PRESSED
-			    && (temperature_setpoint < MAX_TEMPERATURE)) {
-				temperature_setpoint++;
-				button_input_time = millis();
-			} else if (SW1_PRESSED && (temperature_setpoint >= MIN_TEMPERATURE)) {	// allows cold air
-				temperature_setpoint--;
-				button_input_time = millis();
+			if (button_counter == 200) {
+
+				if (temperature_setpoint < MAX_TEMPERATURE_SP) {
+					temperature_setpoint++;
+					temperature_setpoint_saved = 0;
+				}
+
 			}
 
+			if (button_counter == 800) {
+
+				if (temperature_setpoint <
+				    (MAX_TEMPERATURE_SP - 10)) {
+					temperature_setpoint += 10;
+					temperature_setpoint_saved = 0;
+				}
+
+				button_counter = 201;
+
+			}
+
+		} else if (SW1_PRESSED) {
+			button_input_time = millis();
+			button_counter++;
+
+			if (button_counter == 200) {
+
+				if (temperature_setpoint >= MIN_TEMPERATURE_SP) {	// allows for cold air
+					temperature_setpoint--;
+					temperature_setpoint_saved = 0;
+				}
+
+			}
+
+			if (button_counter == 800) {
+
+				if (temperature_setpoint >
+				    (MIN_TEMPERATURE_SP + 10)) {
+					temperature_setpoint -= 10;
+					temperature_setpoint_saved = 0;
+				}
+
+				button_counter = 201;
+
+			}
+
+		} else {
+			button_counter = 0;
 		}
 
 		if ((millis() - button_input_time) < SHOW_SETPOINT_TIMEOUT) {
 			display_number(temperature_setpoint);	// show temperature setpoint
 		} else {
-			if (temperature_average <= SAFE_TO_TOUCH_TEMPERATURE) {
+			if (temperature_setpoint_saved == 0) {
+				set_eeprom_saved_dot();
+				EEPROM.write(0, highByte(temperature_setpoint));
+				EEPROM.write(1, lowByte(temperature_setpoint));
+				temperature_setpoint_saved_time = millis();
+				temperature_setpoint_saved = 1;
+			} else if (temperature_average <=
+				   SAFE_TO_TOUCH_TEMPERATURE) {
 				display_number(6666);
+			} else if (temperature_average > MAX_TEMPERATURE_ERR) {
+				display_number(9999);	// probably the wand is not connected or thermo couple has failed
+			} else
+			    if (abs
+				((int16_t) (temperature_average) -
+				 (int16_t) (temperature_setpoint)) <
+				TEMPERATURE_REACHED_MARGIN) {
+				display_number(temperature_setpoint);	// avoid showing insignificant fluctuations on the display (annoying)
 			} else {
-                                if (temperature_average > 800) {
-                                  display_number(9999); // probably the wand is not connected or thermo couple has failed
-                                } else {
-      				  display_number(temperature_average);
-				  //display_number(temperature_inst);
-                                }
+				display_number(temperature_average);
+				//display_number(temperature_inst);
 			}
 		}
 
-		// uint32_t end_time = micros();
-		// Serial.println(end_time - start_time);
-
+		if ((millis() - temperature_setpoint_saved_time) > 500) {
+			clear_eeprom_saved_dot();
+		}
 	}
 
 }
@@ -256,6 +319,16 @@ void clear_dot(void)
 	framebuffer[3] = 255;
 }
 
+void set_eeprom_saved_dot(void)
+{
+	framebuffer[5] = '.';
+}
+
+void clear_eeprom_saved_dot(void)
+{
+	framebuffer[5] = 255;
+}
+
 void display_number(uint16_t number)
 {
 
@@ -266,11 +339,11 @@ void display_number(uint16_t number)
 	uint8_t dig1 = 0;
 	uint8_t dig2 = 0;
 
-        if (number == 9999) {
+	if (number == 9999) {
 		dig0 = 'N';
 		dig1 = 'A';
 		dig2 = 'F';
-        } else if (number == 6666) {
+	} else if (number == 6666) {
 		dig0 = '-';
 		dig1 = '-';
 		dig2 = '-';
@@ -301,7 +374,7 @@ void display_char(uint8_t digit, uint8_t character)
 
 	switch (digit) {
 	case 0:
-		DIG0_ON;	// turn on digit #0
+		DIG0_ON;	// turn on digit #0 (from right)
 		break;
 	case 1:
 		DIG1_ON;	// #1
@@ -311,6 +384,12 @@ void display_char(uint8_t digit, uint8_t character)
 		break;
 	case 3:
 		DIG0_ON;	// #0 for the dot
+		break;
+	case 4:
+		DIG1_ON;	// #1 for the dot
+		break;
+	case 5:
+		DIG2_ON;	// #2 for the dot
 		break;
 
 	default:
@@ -360,12 +439,12 @@ void display_char(uint8_t digit, uint8_t character)
 	case 'F':
 		PORTD = ~0x4B;	// 'F'
 		break;
-        case 'A':
-                PORTD = ~0xEB;  // 'A'
-                break;
-        case 'N':             
-                PORTD = ~0xAB;  // 'N'
-                break;
+	case 'A':
+		PORTD = ~0xEB;	// 'A'
+		break;
+	case 'N':
+		PORTD = ~0xAB;	// 'N'
+		break;
 	case 255:
 		PORTD = 0xFF;	// segments OFF
 		break;
@@ -465,7 +544,7 @@ ISR(TIMER1_COMPA_vect)
 	display_char(digit, framebuffer[digit]);
 	digit++;
 
-	if (digit == 4) {
+	if (digit == 6) {
 		digit = 0;
 	}
 }
