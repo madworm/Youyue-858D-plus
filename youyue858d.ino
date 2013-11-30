@@ -7,7 +7,7 @@
  *
  * Other identifiers (see images)
  *
- * V1.05 Full PID temperature control + heater indicator + persistent setpoint storage + better button handling
+ * V1.05 PID temperature control + heater indicator + persistent setpoint storage + better button handling
  *
  * 2013 - Robert Spitzenpfeil
  *
@@ -79,7 +79,7 @@
 #define D_GAIN 0.0
 
 #define HEATER_DUTY_CYCLE_MAX 800L
-#define PWM_CYCLES 800L
+#define PWM_CYCLES 800U
 #define TEMPERATURE_CALIB_OFFSET 33
 
 #define TEMPERATURE_AVERAGES 1000L
@@ -143,10 +143,10 @@ void loop(void)
 
 		static uint16_t heater_ctr = 0;
 		static int32_t heater_duty_cycle = 0;
-		static float PID_drive = 0;
 		static int16_t error = 0;
 		static int32_t error_accu = 0;
 		static int16_t velocity = 0;
+		static float PID_drive = 0;
 
 		static uint16_t button_counter = 0;
 
@@ -162,28 +162,35 @@ void loop(void)
 			FAN_ON;
 
 			error = temperature_setpoint - temperature_average;
-			velocity = temperature_average_previous - temperature_average;
 			error_accu += error;
+			velocity = temperature_average_previous - temperature_average;
 
-			PID_drive = error * P_GAIN + error_accu * I_GAIN + velocity * D_GAIN;
+			PID_drive =
+			    error * P_GAIN + error_accu * I_GAIN +
+			    velocity * D_GAIN;
 
-			heater_duty_cycle = (int32_t)(PID_drive);
-
-			if (heater_duty_cycle < 0) {
-				heater_duty_cycle = 0;
-			}
+			heater_duty_cycle = (int32_t) (PID_drive);
 
 			if (heater_duty_cycle > HEATER_DUTY_CYCLE_MAX) {
 				heater_duty_cycle = HEATER_DUTY_CYCLE_MAX;
 			}
 
+			if (heater_duty_cycle < 0) {
+				heater_duty_cycle = 0;
+			}
+
 			if (heater_ctr < heater_duty_cycle) {
 				set_dot();
+			//	if (temperature_average < (temperature_setpoint + TEMPERATURE_MAX_OVERSHOOT)) {	// hard limit for top temperature
 					HEATER_ON;
-				} else {
-					HEATER_OFF;
-					clear_dot();
-				}
+			//	} else {
+			//		HEATER_OFF;
+			//		clear_dot();
+			//	}
+			} else {
+				HEATER_OFF;
+				clear_dot();
+			}
 
 			heater_ctr++;
 			if (heater_ctr == PWM_CYCLES) {
