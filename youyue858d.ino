@@ -162,13 +162,11 @@ void loop(void)
 			// !! DANGER !!
 			FAN_ON;
 
-			error = temperature_setpoint - temperature_average;
-			error_accu += error;
-			velocity = temperature_average_previous - temperature_average;
+			error = (int16_t)(temperature_setpoint) - (int16_t)(temperature_average);
+			error_accu += (int32_t)(error);
+			velocity = (int16_t)(temperature_average_previous) - (int16_t)(temperature_average);
 
-			PID_drive =
-			    error * P_GAIN + error_accu * I_GAIN +
-			    velocity * D_GAIN;
+			PID_drive = (float)(error) * (float)(P_GAIN) + (float)(error_accu) * (float)(I_GAIN) + (float)(velocity) * (float)(D_GAIN);
 
 			heater_duty_cycle = (int32_t) (PID_drive);
 
