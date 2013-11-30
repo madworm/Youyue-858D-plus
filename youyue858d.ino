@@ -74,8 +74,9 @@
 
 #define SHOW_SETPOINT_TIMEOUT 2000UL
 
-#define T_LOOP_P_CONST 0.003
-#define T_LOOP_D_CONST 28
+#define P_GAIN 1.0
+#define I_GAIN 0.0
+#define T_GAIN 0.0
 
 #define HEATER_DUTY_CYCLE_MAX 800UL
 #define PWM_CYCLES 800UL
@@ -143,6 +144,9 @@ void loop(void)
 		static uint16_t heater_ctr = 0;
 		static uint16_t heater_duty_cycle = 0;
 		static float heater_duty_cycle_tmp = 0;
+		static int16_t error = 0;
+		static int32_t error_accu = 0;
+		static int16_t velocity = 0;
 
 		static uint16_t button_counter = 0;
 
@@ -157,31 +161,27 @@ void loop(void)
 			// !! DANGER !!
 			FAN_ON;
 
-			heater_duty_cycle_tmp +=
-			    ((float)(temperature_setpoint) -
-			     (float)(temperature_inst)) *
-			    (float)(T_LOOP_P_CONST) +
-			    ((float)(temperature_inst_previous) -
-			     (float)(temperature_inst)) *
-			    (float)(T_LOOP_D_CONST);
+			error = temperature_setpoint - temperature_average;
+			velocity = temperature_average_previous - temperature_average;
+			error_accu += error;
+
+			heater_duty_cycle_tmp = error * P_GAIN + error_accu * I_GAIN + velocity * D_GAIN;
 
 			if (heater_duty_cycle_tmp < 0) {
 				heater_duty_cycle_tmp = 0;
 			}
 
-			heater_duty_cycle = (uint16_t) (heater_duty_cycle_tmp);
-
-			if (heater_duty_cycle > HEATER_DUTY_CYCLE_MAX) {
-				heater_duty_cycle = HEATER_DUTY_CYCLE_MAX;
+			if (heater_duty_cycle_tmp > HEATER_DUTY_CYCLE_MAX) {
+				heater_duty_cycle_tmp = HEATER_DUTY_CYCLE_MAX;
 			}
+
+			heater_duty_cycle = (uint16_t)(heater_duty_cycle_tmp);
 
 			if (heater_ctr < heater_duty_cycle) {
 				set_dot();
-				if (temperature_average < (temperature_setpoint + TEMPERATURE_MAX_OVERSHOOT)) {	// hard limit for top temperature
 					HEATER_ON;
 				} else {
 					HEATER_OFF;
-					heater_duty_cycle_tmp /= 2;	// "restart" PD loop
 					clear_dot();
 				}
 			} else {
