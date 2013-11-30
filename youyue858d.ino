@@ -7,7 +7,7 @@
  *
  * Other identifiers (see images)
  *
- * V1.04 with PD temperature control + heater indicator + persistent setpoint storage + better button handling
+ * V1.05 Full PID temperature control + heater indicator + persistent setpoint storage + better button handling
  *
  * 2013 - Robert Spitzenpfeil
  *
@@ -72,22 +72,22 @@
 #define REEDSW_CLOSED ( !(PINB & _BV(PB4)) )
 #define REEDSW_OPEN ( PINB & _BV(PB4) )
 
-#define SHOW_SETPOINT_TIMEOUT 2000UL
+#define SHOW_SETPOINT_TIMEOUT 2000L
 
 #define P_GAIN 1.0
 #define I_GAIN 0.0
-#define T_GAIN 0.0
+#define D_GAIN 0.0
 
-#define HEATER_DUTY_CYCLE_MAX 800UL
-#define PWM_CYCLES 800UL
+#define HEATER_DUTY_CYCLE_MAX 800L
+#define PWM_CYCLES 800L
 #define TEMPERATURE_CALIB_OFFSET 33
 
-#define TEMPERATURE_AVERAGES 1000UL
+#define TEMPERATURE_AVERAGES 1000L
 #define TEMPERATURE_MAX_OVERSHOOT 8
 #define TEMPERATURE_REACHED_MARGIN 4
 #define MIN_TEMPERATURE_SP 65
-#define MAX_TEMPERATURE_SP 500UL
-#define MAX_TEMPERATURE_ERR 600UL
+#define MAX_TEMPERATURE_SP 500L
+#define MAX_TEMPERATURE_ERR 600L
 
 #define SAFE_TO_TOUCH_TEMPERATURE 40
 #define FAN_OFF_TEMPERATURE 45
@@ -184,10 +184,6 @@ void loop(void)
 					HEATER_OFF;
 					clear_dot();
 				}
-			} else {
-				HEATER_OFF;
-				clear_dot();
-			}
 
 			heater_ctr++;
 			if (heater_ctr == PWM_CYCLES) {
