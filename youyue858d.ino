@@ -142,8 +142,8 @@ void loop(void)
 		static uint32_t button_input_time = 0;
 
 		static uint16_t heater_ctr = 0;
-		static uint16_t heater_duty_cycle = 0;
-		static float heater_duty_cycle_tmp = 0;
+		static int32_t heater_duty_cycle = 0;
+		static float PID_drive = 0;
 		static int16_t error = 0;
 		static int32_t error_accu = 0;
 		static int16_t velocity = 0;
@@ -165,17 +165,17 @@ void loop(void)
 			velocity = temperature_average_previous - temperature_average;
 			error_accu += error;
 
-			heater_duty_cycle_tmp = error * P_GAIN + error_accu * I_GAIN + velocity * D_GAIN;
+			PID_drive = error * P_GAIN + error_accu * I_GAIN + velocity * D_GAIN;
 
-			if (heater_duty_cycle_tmp < 0) {
-				heater_duty_cycle_tmp = 0;
+			heater_duty_cycle = (int32_t)(PID_drive);
+
+			if (heater_duty_cycle < 0) {
+				heater_duty_cycle = 0;
 			}
 
-			if (heater_duty_cycle_tmp > HEATER_DUTY_CYCLE_MAX) {
-				heater_duty_cycle_tmp = HEATER_DUTY_CYCLE_MAX;
+			if (heater_duty_cycle > HEATER_DUTY_CYCLE_MAX) {
+				heater_duty_cycle = HEATER_DUTY_CYCLE_MAX;
 			}
-
-			heater_duty_cycle = (uint16_t)(heater_duty_cycle_tmp);
 
 			if (heater_ctr < heater_duty_cycle) {
 				set_dot();
