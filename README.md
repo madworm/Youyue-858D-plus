@@ -2,7 +2,7 @@
 Youyue-858D-plus
 ================
 
-CODE: Custom firmware for my Youyue 858D+
+CODE: Custom firmware for my Youyue 858D+ (ATmega168)
 
 Some videos showing the progress from 'stock firmware' with massive temperature overshoot
 towards almost no overshoot at all.
@@ -22,6 +22,16 @@ The very latest revision contains these features / improvements:
 * Shows live value of temperature (not just set-point)
 * Set-point is shown if temperature is within +- 4°C (suppress +- 1°C noise on display)
 * Indicate when temperature is safe to touch the heater
+
+
+Please note:
+
+Although this device looks very much like ones sold by 'Atten' and others, the innards
+are not necessarily the same. The heater / wand are probably the same, but I know that
+e.g. the 'Atten 858D' uses a different mainboard with a different brand micro controller.
+
+Naturally, this firmware will only work 'as is' for the exact mcu / mainboard combination I have.
+Please see the 'Docs' folder for schematic and PCB photos.
 
 
 ---
