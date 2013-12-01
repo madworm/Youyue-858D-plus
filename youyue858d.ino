@@ -42,59 +42,14 @@
  */
 
 #include <EEPROM.h>
-
-#define FAN_OFF ( PORTC |= _BV(PC3) )
-#define FAN_ON  ( PORTC &= ~_BV(PC3) )
-#define FAN_IS_ON ( !(PINC & _BV(PC3)) )
-#define FAN_IS_OFF ( PINC & _BV(PC3) )
-
-#define DIG0_OFF ( PORTB &= ~_BV(PB0) )
-#define DIG1_OFF ( PORTB &= ~_BV(PB7) )
-#define DIG2_OFF ( PORTB &= ~_BV(PB6) )
-
-#define DIG0_ON ( PORTB |= _BV(PB0) )
-#define DIG1_ON ( PORTB |= _BV(PB7) )
-#define DIG2_ON ( PORTB |= _BV(PB6) )
-
-#define SEGS_OFF ( PORTD = 0xFF )
-
-// THIS IS WHERE IT GETS DANGEROUS
-// YOU CAN START A FIRE AND DO A LOT OF HARM WITH
-// THE HEATER / TRIAC COMMANDS
-#define TRIAC_ON ( PORTB &= ~_BV(PB1) )
-#define HEATER_ON TRIAC_ON
-#define TRIAC_OFF ( PORTB |= _BV(PB1) )
-#define HEATER_OFF TRIAC_OFF
-
-#define SW0_PRESSED ( !(PINB & _BV(PB5)) )
-#define SW1_PRESSED ( !(PINB & _BV(PB2)) )
-
-#define REEDSW_CLOSED ( !(PINB & _BV(PB4)) )
-#define REEDSW_OPEN ( PINB & _BV(PB4) )
-
-#define SHOW_SETPOINT_TIMEOUT 2000L
-
-// P_GAIN ( HEATER_DUTY_CYCLE_MAX / (MAX_TEMPERATURE_SP - 35) )
-#define P_GAIN 1.10
-#define I_GAIN 0.0
-#define D_GAIN 0.0
-
-#define HEATER_DUTY_CYCLE_MAX 512L
-#define PWM_CYCLES 512L
-#define TEMPERATURE_CALIB_OFFSET 33
-
-#define TEMPERATURE_AVERAGES 1000L
-#define TEMPERATURE_MAX_OVERSHOOT 8
-#define TEMPERATURE_REACHED_MARGIN 4
-#define MIN_TEMPERATURE_SP 65
-#define MAX_TEMPERATURE_SP 500L
-#define MAX_TEMPERATURE_ERR 600L
-
-#define SAFE_TO_TOUCH_TEMPERATURE 40
-#define FAN_OFF_TEMPERATURE 45
-#define FAN_ON_TEMPERATURE 60
+#include "youyue858d.h"
 
 uint8_t framebuffer[6] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };	// dig0, dig1, dig2, dot0, dot1, dot2 - couting starts from right side
+
+CPARAM p_gain = { 0, 999, 0, 2, 3 };	// min, max, value, eep_addr_high, eep_addr_low
+CPARAM i_gain = { 0, 999, 0, 4, 5 };
+CPARAM d_gain = { 0, 999, 0, 6, 7 };
+CPARAM temp_offset_corr = { -100, 100, 33, 8, 9 };
 
 void setup(void)
 {
@@ -114,6 +69,19 @@ void setup(void)
 	DDRB |= (_BV(PB0) | _BV(PB6) | _BV(PB7));	// 7-seg digits 1,2,3
 
 	analogReference(EXTERNAL);	// use external 2.5V as ADC reference voltage (VCC / 2)
+
+	if (SW0_PRESSED && SW1_PRESSED) {
+		p_gain.value = P_GAIN_DEFAULT;
+		i_gain.value = I_GAIN_DEFAULT;
+		d_gain.value = D_GAIN_DEFAULT;
+		temp_offset_corr.value = TEMP_OFFSET_CORR_DEFAULT;
+
+		eep_save(&p_gain);
+		eep_save(&i_gain);
+		eep_save(&d_gain);
+		eep_save(&temp_offset_corr);
+	}
+
 }
 
 void loop(void)
@@ -132,6 +100,11 @@ void loop(void)
 	} else {
 		temperature_setpoint = MIN_TEMPERATURE_SP;
 	}
+
+	eep_load(&p_gain);
+	eep_load(&i_gain);
+	eep_load(&d_gain);
+	eep_load(&temp_offset_corr);
 
 	while (1) {
 		static uint16_t temperature_inst = 0;
@@ -155,18 +128,20 @@ void loop(void)
 		static uint32_t temperature_setpoint_saved_time = 0;
 
 		temperature_inst_previous = temperature_inst;
-		temperature_inst = analogRead(A0) + TEMPERATURE_CALIB_OFFSET;	// approx. temp in °C
+		temperature_inst = analogRead(A0) + temp_offset_corr.value;	// approx. temp in °C
 
 		if (REEDSW_OPEN && (temperature_setpoint >= MIN_TEMPERATURE_SP)
 		    && (temperature_average < MAX_TEMPERATURE_ERR)) {
 			// !! DANGER !!
 			FAN_ON;
 
-			error = (int16_t)(temperature_setpoint) - (int16_t)(temperature_average);
-			error_accu += (int32_t)(error);
-			velocity = (int16_t)(temperature_average_previous) - (int16_t)(temperature_average);
+			error = (int16_t) (temperature_setpoint) - (int16_t) (temperature_average);
+			error_accu += (int32_t) (error);
+			velocity = (int16_t) (temperature_average_previous) - (int16_t) (temperature_average);
 
-			PID_drive = (float)(error) * (float)(P_GAIN) + (float)(error_accu) * (float)(I_GAIN) + (float)(velocity) * (float)(D_GAIN);
+			PID_drive =
+			    (float)(error) * (float)(p_gain.value) +
+			    (float)(error_accu) * (float)(i_gain.value) + (float)(velocity) * (float)(d_gain.value);
 
 			heater_duty_cycle = (int32_t) (PID_drive);
 
@@ -180,12 +155,12 @@ void loop(void)
 
 			if (heater_ctr < heater_duty_cycle) {
 				set_dot();
-			//	if (temperature_average < (temperature_setpoint + TEMPERATURE_MAX_OVERSHOOT)) {	// hard limit for top temperature
-					HEATER_ON;
-			//	} else {
-			//		HEATER_OFF;
-			//		clear_dot();
-			//	}
+				//      if (temperature_average < (temperature_setpoint + TEMPERATURE_MAX_OVERSHOOT)) { // hard limit for top temperature
+				HEATER_ON;
+				//      } else {
+				//              HEATER_OFF;
+				//              clear_dot();
+				//      }
 			} else {
 				HEATER_OFF;
 				clear_dot();
@@ -208,23 +183,27 @@ void loop(void)
 
 		if (temp_avg_ctr == TEMPERATURE_AVERAGES) {
 			temperature_average_previous = temperature_average;
-			temperature_average =
-			    (uint16_t) (temperature_accu /
-					TEMPERATURE_AVERAGES);
+			temperature_average = (uint16_t) (temperature_accu / TEMPERATURE_AVERAGES);
 			temperature_accu = 0;
 			temp_avg_ctr = 0;
 		}
 
 		if (temperature_average >= FAN_ON_TEMPERATURE) {
 			FAN_ON;
-		} else if (REEDSW_CLOSED
-			   && (temperature_average <= FAN_OFF_TEMPERATURE)) {
+		} else if (REEDSW_CLOSED && (temperature_average <= FAN_OFF_TEMPERATURE)) {
 			FAN_OFF;
 		} else if (REEDSW_OPEN) {
 			FAN_ON;
 		}
 
-		if (SW0_PRESSED) {
+		if (SW0_PRESSED && SW1_PRESSED) {
+			HEATER_OFF;
+			change_config_parameter(&p_gain, 'P');
+			change_config_parameter(&i_gain, 'I');
+			change_config_parameter(&d_gain, 'D');
+			change_config_parameter(&temp_offset_corr, 'T');
+
+		} else if (SW0_PRESSED) {
 			button_input_time = millis();
 			button_counter++;
 
@@ -239,8 +218,7 @@ void loop(void)
 
 			if (button_counter == 800) {
 
-				if (temperature_setpoint <
-				    (MAX_TEMPERATURE_SP - 10)) {
+				if (temperature_setpoint < (MAX_TEMPERATURE_SP - 10)) {
 					temperature_setpoint += 10;
 					temperature_setpoint_saved = 0;
 				}
@@ -264,8 +242,7 @@ void loop(void)
 
 			if (button_counter == 800) {
 
-				if (temperature_setpoint >
-				    (MIN_TEMPERATURE_SP + 10)) {
+				if (temperature_setpoint > (MIN_TEMPERATURE_SP + 10)) {
 					temperature_setpoint -= 10;
 					temperature_setpoint_saved = 0;
 				}
@@ -287,16 +264,11 @@ void loop(void)
 				EEPROM.write(1, lowByte(temperature_setpoint));
 				temperature_setpoint_saved_time = millis();
 				temperature_setpoint_saved = 1;
-			} else if (temperature_average <=
-				   SAFE_TO_TOUCH_TEMPERATURE) {
+			} else if (temperature_average <= SAFE_TO_TOUCH_TEMPERATURE) {
 				display_number(6666);
 			} else if (temperature_average > MAX_TEMPERATURE_ERR) {
 				display_number(9999);	// probably the wand is not connected or thermo couple has failed
-			} else
-			    if (abs
-				((int16_t) (temperature_average) -
-				 (int16_t) (temperature_setpoint)) <
-				TEMPERATURE_REACHED_MARGIN) {
+			} else if (abs((int16_t) (temperature_average) - (int16_t) (temperature_setpoint)) < TEMPERATURE_REACHED_MARGIN) {
 				display_number(temperature_setpoint);	// avoid showing insignificant fluctuations on the display (annoying)
 			} else {
 				display_number(temperature_average);
@@ -309,6 +281,104 @@ void loop(void)
 		}
 	}
 
+}
+
+void clear_display(void)
+{
+	framebuffer[0] = 255;	// 255 --> 7-seg character off
+	framebuffer[1] = 255;
+	framebuffer[2] = 255;
+	framebuffer[3] = 255;
+	framebuffer[4] = 255;
+	framebuffer[5] = 255;
+}
+
+void change_config_parameter(CPARAM * param, uint8_t character)
+{
+	clear_display();
+
+	switch (character) {
+	case 'P':
+		framebuffer[2] = character;
+		break;
+	case 'I':
+		framebuffer[2] = character;
+		break;
+	case 'D':
+		framebuffer[2] = character;
+		break;
+	case 'T':
+		framebuffer[2] = character;
+		break;
+	default:
+		break;
+	}
+
+	delay(2000);		// let the user read what is shown
+
+	uint8_t loop = 1;
+	uint16_t button_counter = 0;
+
+	while (loop == 1) {
+
+		if (SW0_PRESSED && SW1_PRESSED) {
+			loop = 0;
+		} else if (SW0_PRESSED) {
+			button_counter++;
+
+			if (button_counter == 200) {
+
+				if (param->value < param->limit_high) {
+					param->value++;
+				}
+			}
+
+			if (button_counter == 800) {
+
+				if (param->value < param->limit_high - 10) {
+					param->value += 10;
+				}
+				button_counter = 201;
+
+			}
+
+		} else if (SW1_PRESSED) {
+			button_counter++;
+
+			if (button_counter == 200) {
+
+				if (param->value > param->limit_low) {
+					param->value--;
+				}
+			}
+
+			if (button_counter == 800) {
+
+				if (param->value > param->limit_low + 10) {
+					param->value -= 10;
+				}
+
+				button_counter = 201;
+
+			}
+
+		} else {
+			button_counter = 0;
+		}
+		display_number(param->value);
+	}
+	eep_save(param);
+}
+
+void eep_save(CPARAM * param)
+{
+	EEPROM.write(param->eep_addr_high, highByte(param->value));
+	EEPROM.write(param->eep_addr_low, lowByte(param->value));
+}
+
+void eep_load(CPARAM * param)
+{
+	param->value = (EEPROM.read(param->eep_addr_high) << 8) | EEPROM.read(param->eep_addr_low);
 }
 
 void set_dot(void)
@@ -331,8 +401,14 @@ void clear_eeprom_saved_dot(void)
 	framebuffer[5] = 255;
 }
 
-void display_number(uint16_t number)
+void display_number(int16_t number)
 {
+	if (number < 0) {
+		framebuffer[4] = '.';
+		number = -number;
+	} else {
+		framebuffer[4] = 255;
+	}
 
 	uint16_t temp1 = 0;
 	uint16_t temp2 = 0;
@@ -446,6 +522,18 @@ void display_char(uint8_t digit, uint8_t character)
 		break;
 	case 'N':
 		PORTD = ~0xAB;	// 'N'
+		break;
+	case 'P':
+		PORTD = ~0xCB;	// 'P'
+		break;
+	case 'I':
+		PORTD = ~0xA0;	// 'I'
+		break;
+	case 'D':
+		PORTD = ~0xE6;	// 'D'
+		break;
+	case 'T':
+		PORTD = ~0x0E;	// 'T'
 		break;
 	case 255:
 		PORTD = 0xFF;	// segments OFF
