@@ -427,10 +427,14 @@ void clear_eeprom_saved_dot(void)
 void display_number(int16_t number)
 {
 	if (number < 0) {
+		framebuffer[3] = '.';
 		framebuffer[4] = '.';
+		framebuffer[5] = '.';
 		number = -number;
 	} else {
-		framebuffer[4] = 255;
+		framebuffer[3] = 255;
+                framebuffer[4] = 255;
+                framebuffer[5] = 255;
 	}
 
 	uint16_t temp1 = 0;
@@ -556,7 +560,7 @@ void display_char(uint8_t digit, uint8_t character)
 		PORTD = ~0xE6;	// 'D'
 		break;
 	case 'T':
-		PORTD = ~0x0E;	// 'T'
+		PORTD = ~0x4E;	// 'T'
 		break;
 	case 255:
 		PORTD = 0xFF;	// segments OFF
