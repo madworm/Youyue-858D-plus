@@ -47,10 +47,11 @@
 uint8_t framebuffer[6] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };	// dig0, dig1, dig2, dot0, dot1, dot2 - couting starts from right side
 
 CPARAM p_gain = { 0, 999, 0, 2, 3 };	// min, max, value, eep_addr_high, eep_addr_low
-CPARAM i_gain = { 0, 50, 0, 4, 5 };
+CPARAM i_gain = { 0, 999, 0, 4, 5 };
 CPARAM d_gain = { 0, 999, 0, 6, 7 };
-CPARAM temp_offset_corr = { -100, 100, 0, 8, 9 };
-CPARAM temp_setpoint = { 60, 500, 0, 10, 11 };
+CPARAM i_thresh = { 0, 100, 0, 8, 9 };
+CPARAM temp_offset_corr = { -100, 100, 0, 10, 11 };
+CPARAM temp_setpoint = { 60, 500, 0, 12, 13 };
 
 void setup(void)
 {
@@ -74,6 +75,7 @@ void setup(void)
 	eep_load(&p_gain);
 	eep_load(&i_gain);
 	eep_load(&d_gain);
+	eep_load(&i_thresh);
 	eep_load(&temp_offset_corr);
 	eep_load(&temp_setpoint);
 
@@ -81,17 +83,21 @@ void setup(void)
 		p_gain.value = P_GAIN_DEFAULT;
 		i_gain.value = I_GAIN_DEFAULT;
 		d_gain.value = D_GAIN_DEFAULT;
+		i_thresh.value = I_THRESH_DEFAULT;
 		temp_offset_corr.value = TEMP_OFFSET_CORR_DEFAULT;
+		temp_setpoint.value = TEMP_SETPOINT_DEFAULT;
 
 		eep_save(&p_gain);
 		eep_save(&i_gain);
 		eep_save(&d_gain);
+		eep_save(&i_thresh);
 		eep_save(&temp_offset_corr);
+		eep_save(&temp_setpoint);
 	}
 	//Serial.begin(9600);
 
-	segm_test();
-	// char_test();
+	//segm_test();
+	//char_test();
 	fan_test();
 
 	setup_timer1_ctc();
@@ -136,11 +142,11 @@ void loop(void)
 		error = temp_setpoint.value - temp_average;
 		velocity = temp_average_previous - temp_average;
 
-		if (abs(error) < 20) {
-			// if closer than 15°C to target temperature use PID control
+		if (abs(error) < i_thresh.value) {
+			// if close enough to target temperature use PID control
 			error_accu += error;
 		} else {
-			// if outside +-15°C only use PD control (avoids issues wit error_accu growing too large
+			// otherwise only use PD control (avoids issues with error_accu growing too large
 			error_accu = 0;
 		}
 
@@ -160,12 +166,7 @@ void loop(void)
 
 		if (heater_ctr < heater_duty_cycle) {
 			set_dot();
-			if (temp_average < (temp_setpoint.value + TEMP_MAX_OVERSHOOT)) {	// hard limit for top temperature
-				HEATER_ON;
-			} else {
-				HEATER_OFF;
-				clear_dot();
-			}
+			HEATER_ON;
 		} else {
 			HEATER_OFF;
 			clear_dot();
@@ -203,10 +204,11 @@ void loop(void)
 
 	if (SW0_PRESSED && SW1_PRESSED) {
 		HEATER_OFF;
-		change_config_parameter(&p_gain, 'P');
-		change_config_parameter(&i_gain, 'I');
-		change_config_parameter(&d_gain, 'D');
-		change_config_parameter(&temp_offset_corr, 'T');
+		change_config_parameter(&p_gain, "P");
+		change_config_parameter(&i_gain, "I");
+		change_config_parameter(&d_gain, "D");
+		change_config_parameter(&i_thresh, "ITH");
+		change_config_parameter(&temp_offset_corr, "TOF");
 
 	} else if (SW0_PRESSED) {
 		button_input_time = millis();
@@ -297,25 +299,15 @@ void clear_display(void)
 	framebuffer[5] = 255;
 }
 
-void change_config_parameter(CPARAM * param, uint8_t character)
+void change_config_parameter(CPARAM * param, const char *string)
 {
 	clear_display();
 
-	switch (character) {
-	case 'P':
-		framebuffer[2] = character;
-		break;
-	case 'I':
-		framebuffer[2] = character;
-		break;
-	case 'D':
-		framebuffer[2] = character;
-		break;
-	case 'T':
-		framebuffer[2] = character;
-		break;
-	default:
-		break;
+	uint8_t ctr;
+
+	for (ctr = 0; ctr <= 2; ctr++) {
+		// read the first 3 characters of the string 
+		framebuffer[2 - ctr] = string[ctr];
 	}
 
 	delay(2000);		// let the user read what is shown
@@ -433,8 +425,8 @@ void display_number(int16_t number)
 		number = -number;
 	} else {
 		framebuffer[3] = 255;
-                framebuffer[4] = 255;
-                framebuffer[5] = 255;
+		framebuffer[4] = 255;
+		framebuffer[5] = 255;
 	}
 
 	uint16_t temp1 = 0;
@@ -496,7 +488,6 @@ void display_char(uint8_t digit, uint8_t character)
 	case 5:
 		DIG2_ON;	// #2 for the dot
 		break;
-
 	default:
 		break;
 	}
@@ -535,7 +526,7 @@ void display_char(uint8_t digit, uint8_t character)
 	case '-':
 		PORTD = ~0x40;	// '-'              
 		break;
-	case 'o':
+	case 'O':
 		PORTD = ~0x66;	// 'o'
 		break;
 	case '.':
@@ -561,6 +552,9 @@ void display_char(uint8_t digit, uint8_t character)
 		break;
 	case 'T':
 		PORTD = ~0x4E;	// 'T'
+		break;
+	case 'H':
+		PORTD = ~0x6A;	// 'H'
 		break;
 	case 255:
 		PORTD = 0xFF;	// segments OFF
