@@ -51,7 +51,7 @@ CPARAM i_gain = { 0, 999, 0, 4, 5 };
 CPARAM d_gain = { 0, 999, 0, 6, 7 };
 CPARAM i_thresh = { 0, 100, 0, 8, 9 };
 CPARAM temp_offset_corr = { -100, 100, 0, 10, 11 };
-CPARAM temp_setpoint = { 60, 500, 0, 12, 13 };
+CPARAM temp_setpoint = { 50, 500, 0, 12, 13 };
 
 void setup(void)
 {
@@ -223,7 +223,7 @@ void loop(void)
 
 		}
 
-		if (button_counter == 800) {
+		if (button_counter == 600) {
 
 			if (temp_setpoint.value < (temp_setpoint.value_max - 10)) {
 				temp_setpoint.value += 10;
@@ -240,14 +240,14 @@ void loop(void)
 
 		if (button_counter == 200) {
 
-			if (temp_setpoint.value >= temp_setpoint.value_min) {	// allows for cold air
+			if (temp_setpoint.value > temp_setpoint.value_min) {
 				temp_setpoint.value--;
 				temp_setpoint_saved = 0;
 			}
 
 		}
 
-		if (button_counter == 800) {
+		if (button_counter == 600) {
 
 			if (temp_setpoint.value > (temp_setpoint.value_min + 10)) {
 				temp_setpoint.value -= 10;
@@ -314,7 +314,7 @@ void change_config_parameter(CPARAM * param, const char *string)
 		}
 	}
 
-	delay(2000);		// let the user read what is shown
+	delay(750);		// let the user read what is shown
 
 	uint8_t loop = 1;
 	uint16_t button_counter = 0;
@@ -333,7 +333,7 @@ void change_config_parameter(CPARAM * param, const char *string)
 				}
 			}
 
-			if (button_counter == 4000) {
+			if (button_counter == 2000) {
 
 				if (param->value < param->value_max - 10) {
 					param->value += 10;
@@ -352,7 +352,7 @@ void change_config_parameter(CPARAM * param, const char *string)
 				}
 			}
 
-			if (button_counter == 4000) {
+			if (button_counter == 2000) {
 
 				if (param->value > param->value_min + 10) {
 					param->value -= 10;
