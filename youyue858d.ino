@@ -91,7 +91,7 @@ void setup(void)
 	//Serial.begin(9600);
 
 	segm_test();
-	char_test();
+	// char_test();
 	fan_test();
 
 	setup_timer1_ctc();
@@ -321,39 +321,39 @@ void change_config_parameter(CPARAM * param, uint8_t character)
 		} else if (SW0_PRESSED) {
 			button_counter++;
 
-			if (button_counter == 200) {
+			if (button_counter == 500) {
 
 				if (param->value < param->value_max) {
 					param->value++;
 				}
 			}
 
-			if (button_counter == 800) {
+			if (button_counter == 4000) {
 
 				if (param->value < param->value_max - 10) {
 					param->value += 10;
 				}
-				button_counter = 201;
+				button_counter = 501;
 
 			}
 
 		} else if (SW1_PRESSED) {
 			button_counter++;
 
-			if (button_counter == 200) {
+			if (button_counter == 500) {
 
 				if (param->value > param->value_min) {
 					param->value--;
 				}
 			}
 
-			if (button_counter == 800) {
+			if (button_counter == 4000) {
 
 				if (param->value > param->value_min + 10) {
 					param->value -= 10;
 				}
 
-				button_counter = 201;
+				button_counter = 501;
 
 			}
 
@@ -362,7 +362,10 @@ void change_config_parameter(CPARAM * param, uint8_t character)
 		}
 		display_number(param->value);
 	}
+	set_eeprom_saved_dot();
 	eep_save(param);
+	delay(1000);
+	clear_eeprom_saved_dot();
 }
 
 void eep_save(CPARAM * param)
@@ -573,17 +576,17 @@ void char_test(void)
 	uint16_t ctr;
 
 	for (ctr = 0; ctr <= 255; ctr++) {
-		display_char(1, ctr);
-		delay(100);
-	}
-
-	for (ctr = 0; ctr <= 255; ctr++) {
-		display_char(2, ctr);
+		display_char(0, ctr);
 		delay(10);
 	}
 
 	for (ctr = 0; ctr <= 255; ctr++) {
-		display_char(3, ctr);
+		display_char(1, ctr);
+		delay(10);
+	}
+
+	for (ctr = 0; ctr <= 255; ctr++) {
+		display_char(2, ctr);
 		delay(10);
 	}
 }
