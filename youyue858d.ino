@@ -71,6 +71,12 @@ void setup(void)
 
 	analogReference(EXTERNAL);	// use external 2.5V as ADC reference voltage (VCC / 2)
 
+	eep_load(&p_gain);
+	eep_load(&i_gain);
+	eep_load(&d_gain);
+	eep_load(&temp_offset_corr);
+	eep_load(&temp_setpoint);
+
 	if (SW0_PRESSED && SW1_PRESSED) {
 		p_gain.value = P_GAIN_DEFAULT;
 		i_gain.value = I_GAIN_DEFAULT;
@@ -82,199 +88,194 @@ void setup(void)
 		eep_save(&d_gain);
 		eep_save(&temp_offset_corr);
 	}
+	//Serial.begin(9600);
 
+	segm_test();
+	char_test();
+	fan_test();
+
+	setup_timer1_ctc();
 }
 
 void loop(void)
 {
-	//segm_test();
-	fan_test();
-	//char_test();
+	//int32_t start_time = micros();      
 
-	setup_timer1_ctc();
+	static int16_t temp_inst = 0;
+	static int16_t temp_inst_previous = 0;
+	static int32_t temp_accu = 0;
+	static int16_t temp_average = 0;
+	static int16_t temp_average_previous = 0;
 
-	eep_load(&p_gain);
-	eep_load(&i_gain);
-	eep_load(&d_gain);
-	eep_load(&temp_offset_corr);
-	eep_load(&temp_setpoint);
+	static int32_t button_input_time = 0;
 
-	while (1) {
-		static int16_t temp_inst = 0;
-		static int16_t temp_inst_previous = 0;
-		static int32_t temp_accu = 0;
-		static int16_t temp_average = 0;
-		static int16_t temp_average_previous = 0;
+	static int16_t heater_ctr = 0;
+	static int16_t heater_duty_cycle = 0;
+	static int16_t error = 0;
+	static int32_t error_accu = 0;
+	static int16_t velocity = 0;
+	static float PID_drive = 0;
 
-		static int32_t button_input_time = 0;
+	static int16_t button_counter = 0;
 
-		static int16_t heater_ctr = 0;
-		static int16_t heater_duty_cycle = 0;
-		static int16_t error = 0;
-		static int32_t error_accu = 0;
-		static int16_t velocity = 0;
-		static float PID_drive = 0;
+	static uint8_t temp_setpoint_saved = 1;
+	static int32_t temp_setpoint_saved_time = 0;
 
-		static int16_t button_counter = 0;
+	temp_inst_previous = temp_inst;
+	temp_inst = analogRead(A0) + temp_offset_corr.value;	// approx. temp in °C
 
-		static uint8_t temp_setpoint_saved = 1;
-		static int32_t temp_setpoint_saved_time = 0;
+	if (temp_inst < 0) {
+		temp_inst = 0;
+	}
 
-		temp_inst_previous = temp_inst;
-		temp_inst = analogRead(A0) + temp_offset_corr.value;	// approx. temp in °C
+	if (REEDSW_OPEN && (temp_setpoint.value >= temp_setpoint.value_min)
+	    && (temp_average < MAX_TEMP_ERR)) {
+		// !! DANGER !!
+		FAN_ON;
 
-		if (temp_inst < 0) {
-			temp_inst = 0;
+		error = temp_setpoint.value - temp_average;
+		error_accu += error;
+		velocity = temp_average_previous - temp_average;
+
+		PID_drive = error * (p_gain.value / 100.0) + error_accu * (i_gain.value / 100.0) + velocity * (d_gain.value / 100.0);
+
+		heater_duty_cycle = (int16_t) (PID_drive);
+
+		if (heater_duty_cycle > HEATER_DUTY_CYCLE_MAX) {
+			heater_duty_cycle = HEATER_DUTY_CYCLE_MAX;
 		}
 
-		if (REEDSW_OPEN && (temp_setpoint.value >= temp_setpoint.value_min)
-		    && (temp_average < MAX_TEMP_ERR)) {
-			// !! DANGER !!
-			FAN_ON;
+		if (heater_duty_cycle < 0) {
+			heater_duty_cycle = 0;
+		}
 
-			error = temp_setpoint.value - temp_average;
-			error_accu += error;
-			velocity = temp_average_previous - temp_average;
-
-			PID_drive = error * (p_gain.value / 100.0) + error_accu * (i_gain.value / 100.0) + velocity * (d_gain.value / 100.0);
-
-			heater_duty_cycle = (int16_t) (PID_drive);
-
-			if (heater_duty_cycle > HEATER_DUTY_CYCLE_MAX) {
-				heater_duty_cycle = HEATER_DUTY_CYCLE_MAX;
-			}
-
-			if (heater_duty_cycle < 0) {
-				heater_duty_cycle = 0;
-			}
-
-			if (heater_ctr < heater_duty_cycle) {
-				set_dot();
-				//      if (temp_average < (temp_setpoint + TEMPERATURE_MAX_OVERSHOOT)) { // hard limit for top temperature
-				HEATER_ON;
-				//      } else {
-				//              HEATER_OFF;
-				//              clear_dot();
-				//      }
-			} else {
-				HEATER_OFF;
-				clear_dot();
-			}
-
-			heater_ctr++;
-			if (heater_ctr == PWM_CYCLES) {
-				heater_ctr = 0;
-			}
-
+		if (heater_ctr < heater_duty_cycle) {
+			set_dot();
+			//      if (temp_average < (temp_setpoint + TEMPERATURE_MAX_OVERSHOOT)) { // hard limit for top temperature
+			HEATER_ON;
+			//      } else {
+			//              HEATER_OFF;
+			//              clear_dot();
+			//      }
 		} else {
 			HEATER_OFF;
 			clear_dot();
 		}
 
-		static uint16_t temp_avg_ctr = 0;
-
-		temp_accu += temp_inst;
-		temp_avg_ctr++;
-
-		if (temp_avg_ctr == TEMP_AVERAGES) {
-			temp_average_previous = temp_average;
-			temp_average = temp_accu / TEMP_AVERAGES;
-			temp_accu = 0;
-			temp_avg_ctr = 0;
+		heater_ctr++;
+		if (heater_ctr == PWM_CYCLES) {
+			heater_ctr = 0;
 		}
 
-		if (temp_average >= FAN_ON_TEMP) {
-			FAN_ON;
-		} else if (REEDSW_CLOSED && (temp_average <= FAN_OFF_TEMP)) {
-			FAN_OFF;
-		} else if (REEDSW_OPEN) {
-			FAN_ON;
+	} else {
+		HEATER_OFF;
+		clear_dot();
+	}
+
+	static uint16_t temp_avg_ctr = 0;
+
+	temp_accu += temp_inst;
+	temp_avg_ctr++;
+
+	if (temp_avg_ctr == TEMP_AVERAGES) {
+		temp_average_previous = temp_average;
+		temp_average = temp_accu / TEMP_AVERAGES;
+		temp_accu = 0;
+		temp_avg_ctr = 0;
+	}
+
+	if (temp_average >= FAN_ON_TEMP) {
+		FAN_ON;
+	} else if (REEDSW_CLOSED && (temp_average <= FAN_OFF_TEMP)) {
+		FAN_OFF;
+	} else if (REEDSW_OPEN) {
+		FAN_ON;
+	}
+
+	if (SW0_PRESSED && SW1_PRESSED) {
+		HEATER_OFF;
+		change_config_parameter(&p_gain, 'P');
+		change_config_parameter(&i_gain, 'I');
+		change_config_parameter(&d_gain, 'D');
+		change_config_parameter(&temp_offset_corr, 'T');
+
+	} else if (SW0_PRESSED) {
+		button_input_time = millis();
+		button_counter++;
+
+		if (button_counter == 200) {
+
+			if (temp_setpoint.value < temp_setpoint.value_max) {
+				temp_setpoint.value++;
+				temp_setpoint_saved = 0;
+			}
+
 		}
 
-		if (SW0_PRESSED && SW1_PRESSED) {
-			HEATER_OFF;
-			change_config_parameter(&p_gain, 'P');
-			change_config_parameter(&i_gain, 'I');
-			change_config_parameter(&d_gain, 'D');
-			change_config_parameter(&temp_offset_corr, 'T');
+		if (button_counter == 800) {
 
-		} else if (SW0_PRESSED) {
-			button_input_time = millis();
-			button_counter++;
-
-			if (button_counter == 200) {
-
-				if (temp_setpoint.value < temp_setpoint.value_max) {
-					temp_setpoint.value++;
-					temp_setpoint_saved = 0;
-				}
-
+			if (temp_setpoint.value < (temp_setpoint.value_max - 10)) {
+				temp_setpoint.value += 10;
+				temp_setpoint_saved = 0;
 			}
 
-			if (button_counter == 800) {
+			button_counter = 201;
 
-				if (temp_setpoint.value < (temp_setpoint.value_max - 10)) {
-					temp_setpoint.value += 10;
-					temp_setpoint_saved = 0;
-				}
+		}
 
-				button_counter = 201;
+	} else if (SW1_PRESSED) {
+		button_input_time = millis();
+		button_counter++;
 
+		if (button_counter == 200) {
+
+			if (temp_setpoint.value >= temp_setpoint.value_min) {	// allows for cold air
+				temp_setpoint.value--;
+				temp_setpoint_saved = 0;
 			}
 
-		} else if (SW1_PRESSED) {
-			button_input_time = millis();
-			button_counter++;
+		}
 
-			if (button_counter == 200) {
+		if (button_counter == 800) {
 
-				if (temp_setpoint.value >= temp_setpoint.value_min) {	// allows for cold air
-					temp_setpoint.value--;
-					temp_setpoint_saved = 0;
-				}
-
+			if (temp_setpoint.value > (temp_setpoint.value_min + 10)) {
+				temp_setpoint.value -= 10;
+				temp_setpoint_saved = 0;
 			}
 
-			if (button_counter == 800) {
+			button_counter = 201;
 
-				if (temp_setpoint.value > (temp_setpoint.value_min + 10)) {
-					temp_setpoint.value -= 10;
-					temp_setpoint_saved = 0;
-				}
+		}
 
-				button_counter = 201;
+	} else {
+		button_counter = 0;
+	}
 
-			}
-
+	if ((millis() - button_input_time) < SHOW_SETPOINT_TIMEOUT) {
+		display_number(temp_setpoint.value);	// show temperature setpoint
+	} else {
+		if (temp_setpoint_saved == 0) {
+			set_eeprom_saved_dot();
+			eep_save(&temp_setpoint);
+			temp_setpoint_saved_time = millis();
+			temp_setpoint_saved = 1;
+		} else if (temp_average <= SAFE_TO_TOUCH_TEMP) {
+			display_number(6666);
+		} else if (temp_average > MAX_TEMP_ERR) {
+			display_number(9999);	// probably the wand is not connected or thermo couple has failed
+		} else if (abs((int16_t) (temp_average) - (int16_t) (temp_setpoint.value)) < TEMP_REACHED_MARGIN) {
+			display_number(temp_setpoint.value);	// avoid showing insignificant fluctuations on the display (annoying)
 		} else {
-			button_counter = 0;
-		}
-
-		if ((millis() - button_input_time) < SHOW_SETPOINT_TIMEOUT) {
-			display_number(temp_setpoint.value);	// show temperature setpoint
-		} else {
-			if (temp_setpoint_saved == 0) {
-				set_eeprom_saved_dot();
-				eep_save(&temp_setpoint);
-				temp_setpoint_saved_time = millis();
-				temp_setpoint_saved = 1;
-			} else if (temp_average <= SAFE_TO_TOUCH_TEMP) {
-				display_number(6666);
-			} else if (temp_average > MAX_TEMP_ERR) {
-				display_number(9999);	// probably the wand is not connected or thermo couple has failed
-			} else if (abs((int16_t) (temp_average) - (int16_t) (temp_setpoint.value)) < TEMP_REACHED_MARGIN) {
-				display_number(temp_setpoint.value);	// avoid showing insignificant fluctuations on the display (annoying)
-			} else {
-				display_number(temp_average);
-				//display_number(temp_inst);
-			}
-		}
-
-		if ((millis() - temp_setpoint_saved_time) > 500) {
-			clear_eeprom_saved_dot();
+			display_number(temp_average);
+			//display_number(temp_inst);
 		}
 	}
 
+	if ((millis() - temp_setpoint_saved_time) > 500) {
+		clear_eeprom_saved_dot();
+	}
+	// int32_t stop_time = micros();
+	//Serial.println(stop_time - start_time);
 }
 
 void clear_display(void)
