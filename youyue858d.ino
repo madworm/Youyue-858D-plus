@@ -428,7 +428,7 @@ void display_number(int16_t number)
 		framebuffer[5] = '.';
 		number = -number;
 	} else {
-		framebuffer[3] = 255;
+		// don't clear framebuffer[3], as this is the heater-indicator
 		framebuffer[4] = 255;
 		framebuffer[5] = 255;
 	}
