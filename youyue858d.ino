@@ -47,8 +47,8 @@
 uint8_t framebuffer[6] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };	// dig0, dig1, dig2, dot0, dot1, dot2 - couting starts from right side
 
 CPARAM p_gain = { 0, 999, 0, 2, 3 };	// min, max, value, eep_addr_high, eep_addr_low
-CPARAM i_gain = { 0, 999, 0, 4, 5 };
-CPARAM d_gain = { 0, 50, 0, 6, 7 };
+CPARAM i_gain = { 0, 50, 0, 4, 5 };
+CPARAM d_gain = { 0, 999, 0, 6, 7 };
 CPARAM temp_offset_corr = { -100, 100, 0, 8, 9 };
 CPARAM temp_setpoint = { 60, 500, 0, 10, 11 };
 
