@@ -134,11 +134,11 @@ void loop(void)
 		FAN_ON;
 
 		error = temp_setpoint.value - temp_average;
-		error_accu += error;
 		velocity = temp_average_previous - temp_average;
 
-		if (abs(temp_average - temp_setpoint.value) < 20) {
+		if (abs(error) < 20) {
 			// if closer than 15°C to target temperature use PID control
+			error_accu += error;
 		} else {
 			// if outside +-15°C only use PD control (avoids issues wit error_accu growing too large
 			error_accu = 0;
