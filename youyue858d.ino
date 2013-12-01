@@ -306,8 +306,12 @@ void change_config_parameter(CPARAM * param, const char *string)
 	uint8_t ctr;
 
 	for (ctr = 0; ctr <= 2; ctr++) {
-		// read the first 3 characters of the string 
-		framebuffer[2 - ctr] = string[ctr];
+		// read the first 3 characters of the string
+		if (string[ctr] == '\0') {
+			break;
+		} else {
+			framebuffer[2 - ctr] = string[ctr];
+		}
 	}
 
 	delay(2000);		// let the user read what is shown
@@ -545,16 +549,16 @@ void display_char(uint8_t digit, uint8_t character)
 		PORTD = ~0xCB;	// 'P'
 		break;
 	case 'I':
-		PORTD = ~0xA0;	// 'I'
+		PORTD = ~0x20;	// 'i'
 		break;
 	case 'D':
-		PORTD = ~0xE6;	// 'D'
+		PORTD = ~0xE6;	// 'd'
 		break;
 	case 'T':
-		PORTD = ~0x4E;	// 'T'
+		PORTD = ~0x4E;	// 't'
 		break;
 	case 'H':
-		PORTD = ~0x6A;	// 'H'
+		PORTD = ~0x6A;	// 'h'
 		break;
 	case 255:
 		PORTD = 0xFF;	// segments OFF
