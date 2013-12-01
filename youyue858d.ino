@@ -151,12 +151,12 @@ void loop(void)
 
 		if (heater_ctr < heater_duty_cycle) {
 			set_dot();
-			//      if (temp_average < (temp_setpoint + TEMPERATURE_MAX_OVERSHOOT)) { // hard limit for top temperature
-			HEATER_ON;
-			//      } else {
-			//              HEATER_OFF;
-			//              clear_dot();
-			//      }
+			if (temp_average < (temp_setpoint.value + TEMP_MAX_OVERSHOOT)) {	// hard limit for top temperature
+				HEATER_ON;
+			} else {
+				HEATER_OFF;
+				clear_dot();
+			}
 		} else {
 			HEATER_OFF;
 			clear_dot();
