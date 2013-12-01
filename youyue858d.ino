@@ -48,7 +48,7 @@ uint8_t framebuffer[6] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };	// dig0, dig1, 
 
 CPARAM p_gain = { 0, 999, 0, 2, 3 };	// min, max, value, eep_addr_high, eep_addr_low
 CPARAM i_gain = { 0, 999, 0, 4, 5 };
-CPARAM d_gain = { 0, 999, 0, 6, 7 };
+CPARAM d_gain = { 0, 50, 0, 6, 7 };
 CPARAM temp_offset_corr = { -100, 100, 0, 8, 9 };
 CPARAM temp_setpoint = { 60, 500, 0, 10, 11 };
 
@@ -137,7 +137,16 @@ void loop(void)
 		error_accu += error;
 		velocity = temp_average_previous - temp_average;
 
-		PID_drive = error * (p_gain.value / 100.0) + error_accu * (i_gain.value / 100.0) + velocity * (d_gain.value / 100.0);
+		if (abs(temp_average - temp_setpoint.value) < 20) {
+			// if closer than 15°C to target temperature use PID control
+		} else {
+			// if outside +-15°C only use PD control (avoids issues wit error_accu growing too large
+			error_accu = 0;
+		}
+
+		PID_drive =
+		    error * (p_gain.value / P_GAIN_SCALING) + error_accu * (i_gain.value / I_GAIN_SCALING) +
+		    velocity * (d_gain.value / D_GAIN_SCALING);
 
 		heater_duty_cycle = (int16_t) (PID_drive);
 
