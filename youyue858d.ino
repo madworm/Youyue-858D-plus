@@ -49,7 +49,8 @@ uint8_t framebuffer[6] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };	// dig0, dig1, 
 CPARAM p_gain = { 0, 999, 0, 2, 3 };	// min, max, value, eep_addr_high, eep_addr_low
 CPARAM i_gain = { 0, 999, 0, 4, 5 };
 CPARAM d_gain = { 0, 999, 0, 6, 7 };
-CPARAM temp_offset_corr = { -100, 100, 33, 8, 9 };
+CPARAM temp_offset_corr = { -100, 100, 0, 8, 9 };
+CPARAM temp_setpoint = { 60, 500, 0, 10, 11 };
 
 void setup(void)
 {
@@ -92,58 +93,52 @@ void loop(void)
 
 	setup_timer1_ctc();
 
-	uint16_t tmp = (EEPROM.read(0) << 8) | EEPROM.read(1);
-	uint16_t temperature_setpoint;
-
-	if ((tmp >= MIN_TEMPERATURE_SP) && (tmp <= MAX_TEMPERATURE_SP)) {
-		temperature_setpoint = tmp;
-	} else {
-		temperature_setpoint = MIN_TEMPERATURE_SP;
-	}
-
 	eep_load(&p_gain);
 	eep_load(&i_gain);
 	eep_load(&d_gain);
 	eep_load(&temp_offset_corr);
+	eep_load(&temp_setpoint);
 
 	while (1) {
-		static uint16_t temperature_inst = 0;
-		static uint16_t temperature_inst_previous = 0;
-		static uint32_t temperature_accu = 0;
-		static uint16_t temperature_average = 0;
-		static uint16_t temperature_average_previous = 0;
+		static int16_t temp_inst = 0;
+		static int16_t temp_inst_previous = 0;
+		static int32_t temp_accu = 0;
+		static int16_t temp_average = 0;
+		static int16_t temp_average_previous = 0;
 
-		static uint32_t button_input_time = 0;
+		static int32_t button_input_time = 0;
 
-		static uint16_t heater_ctr = 0;
-		static int32_t heater_duty_cycle = 0;
+		static int16_t heater_ctr = 0;
+		static int16_t heater_duty_cycle = 0;
 		static int16_t error = 0;
 		static int32_t error_accu = 0;
 		static int16_t velocity = 0;
 		static float PID_drive = 0;
 
-		static uint16_t button_counter = 0;
+		static int16_t button_counter = 0;
 
-		static uint8_t temperature_setpoint_saved = 0;
-		static uint32_t temperature_setpoint_saved_time = 0;
+		static uint8_t temp_setpoint_saved = 1;
+		static int32_t temp_setpoint_saved_time = 0;
 
-		temperature_inst_previous = temperature_inst;
-		temperature_inst = analogRead(A0) + temp_offset_corr.value;	// approx. temp in °C
+		temp_inst_previous = temp_inst;
+		temp_inst = analogRead(A0) + temp_offset_corr.value;	// approx. temp in °C
 
-		if (REEDSW_OPEN && (temperature_setpoint >= MIN_TEMPERATURE_SP)
-		    && (temperature_average < MAX_TEMPERATURE_ERR)) {
+		if (temp_inst < 0) {
+			temp_inst = 0;
+		}
+
+		if (REEDSW_OPEN && (temp_setpoint.value >= temp_setpoint.value_min)
+		    && (temp_average < MAX_TEMP_ERR)) {
 			// !! DANGER !!
 			FAN_ON;
 
-			error = (int16_t) (temperature_setpoint) - (int16_t) (temperature_average);
-			error_accu += (int32_t) (error);
-			velocity = (int16_t) (temperature_average_previous) - (int16_t) (temperature_average);
+			error = temp_setpoint.value - temp_average;
+			error_accu += error;
+			velocity = temp_average_previous - temp_average;
 
-			PID_drive =
-			    (float)(error) * ((float)(p_gain.value) / 100.0) +
-			    (float)(error_accu) * ((float)(i_gain.value) / 100.0) + (float)(velocity) * ((float)(d_gain.value) / 100.0);
+			PID_drive = error * (p_gain.value / 100.0) + error_accu * (i_gain.value / 100.0) + velocity * (d_gain.value / 100.0);
 
-			heater_duty_cycle = (int32_t) (PID_drive);
+			heater_duty_cycle = (int16_t) (PID_drive);
 
 			if (heater_duty_cycle > HEATER_DUTY_CYCLE_MAX) {
 				heater_duty_cycle = HEATER_DUTY_CYCLE_MAX;
@@ -155,7 +150,7 @@ void loop(void)
 
 			if (heater_ctr < heater_duty_cycle) {
 				set_dot();
-				//      if (temperature_average < (temperature_setpoint + TEMPERATURE_MAX_OVERSHOOT)) { // hard limit for top temperature
+				//      if (temp_average < (temp_setpoint + TEMPERATURE_MAX_OVERSHOOT)) { // hard limit for top temperature
 				HEATER_ON;
 				//      } else {
 				//              HEATER_OFF;
@@ -178,19 +173,19 @@ void loop(void)
 
 		static uint16_t temp_avg_ctr = 0;
 
-		temperature_accu += (uint32_t) (temperature_inst);
+		temp_accu += temp_inst;
 		temp_avg_ctr++;
 
-		if (temp_avg_ctr == TEMPERATURE_AVERAGES) {
-			temperature_average_previous = temperature_average;
-			temperature_average = (uint16_t) (temperature_accu / TEMPERATURE_AVERAGES);
-			temperature_accu = 0;
+		if (temp_avg_ctr == TEMP_AVERAGES) {
+			temp_average_previous = temp_average;
+			temp_average = temp_accu / TEMP_AVERAGES;
+			temp_accu = 0;
 			temp_avg_ctr = 0;
 		}
 
-		if (temperature_average >= FAN_ON_TEMPERATURE) {
+		if (temp_average >= FAN_ON_TEMP) {
 			FAN_ON;
-		} else if (REEDSW_CLOSED && (temperature_average <= FAN_OFF_TEMPERATURE)) {
+		} else if (REEDSW_CLOSED && (temp_average <= FAN_OFF_TEMP)) {
 			FAN_OFF;
 		} else if (REEDSW_OPEN) {
 			FAN_ON;
@@ -209,18 +204,18 @@ void loop(void)
 
 			if (button_counter == 200) {
 
-				if (temperature_setpoint < MAX_TEMPERATURE_SP) {
-					temperature_setpoint++;
-					temperature_setpoint_saved = 0;
+				if (temp_setpoint.value < temp_setpoint.value_max) {
+					temp_setpoint.value++;
+					temp_setpoint_saved = 0;
 				}
 
 			}
 
 			if (button_counter == 800) {
 
-				if (temperature_setpoint < (MAX_TEMPERATURE_SP - 10)) {
-					temperature_setpoint += 10;
-					temperature_setpoint_saved = 0;
+				if (temp_setpoint.value < (temp_setpoint.value_max - 10)) {
+					temp_setpoint.value += 10;
+					temp_setpoint_saved = 0;
 				}
 
 				button_counter = 201;
@@ -233,18 +228,18 @@ void loop(void)
 
 			if (button_counter == 200) {
 
-				if (temperature_setpoint >= MIN_TEMPERATURE_SP) {	// allows for cold air
-					temperature_setpoint--;
-					temperature_setpoint_saved = 0;
+				if (temp_setpoint.value >= temp_setpoint.value_min) {	// allows for cold air
+					temp_setpoint.value--;
+					temp_setpoint_saved = 0;
 				}
 
 			}
 
 			if (button_counter == 800) {
 
-				if (temperature_setpoint > (MIN_TEMPERATURE_SP + 10)) {
-					temperature_setpoint -= 10;
-					temperature_setpoint_saved = 0;
+				if (temp_setpoint.value > (temp_setpoint.value_min + 10)) {
+					temp_setpoint.value -= 10;
+					temp_setpoint_saved = 0;
 				}
 
 				button_counter = 201;
@@ -256,27 +251,26 @@ void loop(void)
 		}
 
 		if ((millis() - button_input_time) < SHOW_SETPOINT_TIMEOUT) {
-			display_number(temperature_setpoint);	// show temperature setpoint
+			display_number(temp_setpoint.value);	// show temperature setpoint
 		} else {
-			if (temperature_setpoint_saved == 0) {
+			if (temp_setpoint_saved == 0) {
 				set_eeprom_saved_dot();
-				EEPROM.write(0, highByte(temperature_setpoint));
-				EEPROM.write(1, lowByte(temperature_setpoint));
-				temperature_setpoint_saved_time = millis();
-				temperature_setpoint_saved = 1;
-			} else if (temperature_average <= SAFE_TO_TOUCH_TEMPERATURE) {
+				eep_save(&temp_setpoint);
+				temp_setpoint_saved_time = millis();
+				temp_setpoint_saved = 1;
+			} else if (temp_average <= SAFE_TO_TOUCH_TEMP) {
 				display_number(6666);
-			} else if (temperature_average > MAX_TEMPERATURE_ERR) {
+			} else if (temp_average > MAX_TEMP_ERR) {
 				display_number(9999);	// probably the wand is not connected or thermo couple has failed
-			} else if (abs((int16_t) (temperature_average) - (int16_t) (temperature_setpoint)) < TEMPERATURE_REACHED_MARGIN) {
-				display_number(temperature_setpoint);	// avoid showing insignificant fluctuations on the display (annoying)
+			} else if (abs((int16_t) (temp_average) - (int16_t) (temp_setpoint.value)) < TEMP_REACHED_MARGIN) {
+				display_number(temp_setpoint.value);	// avoid showing insignificant fluctuations on the display (annoying)
 			} else {
-				display_number(temperature_average);
-				//display_number(temperature_inst);
+				display_number(temp_average);
+				//display_number(temp_inst);
 			}
 		}
 
-		if ((millis() - temperature_setpoint_saved_time) > 500) {
+		if ((millis() - temp_setpoint_saved_time) > 500) {
 			clear_eeprom_saved_dot();
 		}
 	}
@@ -328,14 +322,14 @@ void change_config_parameter(CPARAM * param, uint8_t character)
 
 			if (button_counter == 200) {
 
-				if (param->value < param->limit_high) {
+				if (param->value < param->value_max) {
 					param->value++;
 				}
 			}
 
 			if (button_counter == 800) {
 
-				if (param->value < param->limit_high - 10) {
+				if (param->value < param->value_max - 10) {
 					param->value += 10;
 				}
 				button_counter = 201;
@@ -347,14 +341,14 @@ void change_config_parameter(CPARAM * param, uint8_t character)
 
 			if (button_counter == 200) {
 
-				if (param->value > param->limit_low) {
+				if (param->value > param->value_min) {
 					param->value--;
 				}
 			}
 
 			if (button_counter == 800) {
 
-				if (param->value > param->limit_low + 10) {
+				if (param->value > param->value_min + 10) {
 					param->value -= 10;
 				}
 
@@ -372,13 +366,29 @@ void change_config_parameter(CPARAM * param, uint8_t character)
 
 void eep_save(CPARAM * param)
 {
+	// make sure NOT to save invalid parameter values
+	if ((param->value >= param->value_min) && (param->value <= param->value_max)) {
+		// nothing to do
+	} else {
+		// reset to sensible minimum
+		param->value = param->value_min;
+	}
 	EEPROM.write(param->eep_addr_high, highByte(param->value));
 	EEPROM.write(param->eep_addr_low, lowByte(param->value));
 }
 
 void eep_load(CPARAM * param)
 {
-	param->value = (EEPROM.read(param->eep_addr_high) << 8) | EEPROM.read(param->eep_addr_low);
+	int16_t tmp = (EEPROM.read(param->eep_addr_high) << 8) | EEPROM.read(param->eep_addr_low);
+
+	// make sure NOT to restore invalid parameter values
+	if ((tmp >= param->value_min) && (tmp <= param->value_max)) {
+		// the value was good, so we use it
+		param->value = tmp;
+	} else {
+		// reset to sensible value
+		param->value = param->value_min;
+	}
 }
 
 void set_dot(void)

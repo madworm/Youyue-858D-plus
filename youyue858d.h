@@ -2,8 +2,8 @@
 #define youyoue858d_h
 
 typedef struct CPARAM {
-	int16_t limit_low;
-	int16_t limit_high;
+	int16_t value_min;
+	int16_t value_max;
 	int16_t value;
 	uint8_t eep_addr_high;
 	uint8_t eep_addr_low;
@@ -48,15 +48,14 @@ typedef struct CPARAM {
 #define D_GAIN_DEFAULT 0
 #define TEMP_OFFSET_CORR_DEFAULT 33
 
-#define TEMPERATURE_AVERAGES 1000L
-#define TEMPERATURE_MAX_OVERSHOOT 8
-#define TEMPERATURE_REACHED_MARGIN 4
-#define MIN_TEMPERATURE_SP 65
-#define MAX_TEMPERATURE_SP 500L
-#define MAX_TEMPERATURE_ERR 600L
+#define TEMP_AVERAGES 1000L
+#define TEMP_MAX_OVERSHOOT 8
+#define TEMP_REACHED_MARGIN 4
 
-#define SAFE_TO_TOUCH_TEMPERATURE 40
-#define FAN_OFF_TEMPERATURE 45
-#define FAN_ON_TEMPERATURE 60
+#define MAX_TEMP_ERR 600L
+#define SAFE_TO_TOUCH_TEMP 40
+
+#define FAN_OFF_TEMP 45
+#define FAN_ON_TEMP 60
 
 #endif
