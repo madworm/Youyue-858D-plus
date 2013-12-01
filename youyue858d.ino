@@ -140,8 +140,8 @@ void loop(void)
 			velocity = (int16_t) (temperature_average_previous) - (int16_t) (temperature_average);
 
 			PID_drive =
-			    (float)(error) * (float)(p_gain.value) +
-			    (float)(error_accu) * (float)(i_gain.value) + (float)(velocity) * (float)(d_gain.value);
+			    (float)(error) * ((float)(p_gain.value) / 100.0) +
+			    (float)(error_accu) * ((float)(i_gain.value) / 100.0) + (float)(velocity) * ((float)(d_gain.value) / 100.0);
 
 			heater_duty_cycle = (int32_t) (PID_drive);
 
