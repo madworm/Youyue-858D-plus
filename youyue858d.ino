@@ -276,11 +276,21 @@ void loop(void)
 			// something might have gone terribly wrong
 			HEATER_OFF;
 			FAN_ON;
-			display_number(9999);	// probably the wand is not connected or thermo couple has failed
 			while (1) {
 				// stay here until the power is cycled
-				// make sure the user notices the error
+				// make sure the user notices the error by blinking "FAN"
 				// and don't resume operation if the error goes away on its own
+				//
+				// possible reasons to be here:
+				//
+				// * wand is not connected (false temperature reading)
+				// * thermo couple has failed
+				// * true over-temperature condition
+				//
+				display_number(9999);	// display "FAN"
+				delay(1000);
+				clear_display();
+				delay(1000);
 			}
 		} else if (abs((int16_t) (temp_average) - (int16_t) (temp_setpoint.value)) < TEMP_REACHED_MARGIN) {
 			display_number(temp_setpoint.value);	// avoid showing insignificant fluctuations on the display (annoying)
