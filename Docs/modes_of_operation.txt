@@ -1,4 +1,5 @@
 
+
 Once the device (cold) is turned on, it will do the following:
 ==============================================================
 
@@ -69,6 +70,10 @@ Restoring default values:
 Error behaviour:
 ================
 
-* If the wand is disconnected or the temperature is above 600°C, the heater will
-  be turned off and the display shows "FAN" until the error goes away
+* If the wand is disconnected or the thermo-couple has failed or the temperature
+  is above MAX_TEMP_ERR (600°C), the device will go into a "safe mode".
+  
+  The heater will be turned off permanently, the fan will be turned on 
+  to allow fast cooldown and the display will blink "FAN" until power is cycled.
+
 
