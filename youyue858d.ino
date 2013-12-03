@@ -272,8 +272,16 @@ void loop(void)
 			temp_setpoint_saved = 1;
 		} else if (temp_average <= SAFE_TO_TOUCH_TEMP) {
 			display_number(6666);
-		} else if (temp_average > MAX_TEMP_ERR) {
+		} else if (temp_average >= MAX_TEMP_ERR) {
+			// something might have gone terribly wrong
+			HEATER_OFF;
+			FAN_ON;
 			display_number(9999);	// probably the wand is not connected or thermo couple has failed
+			while (1) {
+				// stay here until the power is cycled
+				// make sure the user notices the error
+				// and don't resume operation if the error goes away on its own
+			}
 		} else if (abs((int16_t) (temp_average) - (int16_t) (temp_setpoint.value)) < TEMP_REACHED_MARGIN) {
 			display_number(temp_setpoint.value);	// avoid showing insignificant fluctuations on the display (annoying)
 		} else {
