@@ -1,0 +1,74 @@
+
+Once the device (cold) is turned on, it will do the following:
+==============================================================
+
+* Start the fan for about 2 seconds and turn it off again
+* Either display "---" if the temperature is below 40°C (safe to touch)
+* Or display the current temperature if the temperature is above 40°C
+
+
+Fan controls:
+=============
+
+* The fan-speed is set with the potentiometer
+* If the wand is in the craddle and is cold (< 45°C), then fan is off
+* If the wand is in the craddle and is too hot (> 60°C), the fan is on
+* If the wand is out of the craddle, the fan is always on
+
+
+Temperature control:
+====================
+
+* The base unit usually shows the current temperature (averaged)
+* It shows the setpoint, if the temperature is within +- 3°C
+* Temperature can be changed with the up/down buttons
+* Short button press: +- 1°C
+* Long button press:  +- 10°C
+* The setpoint is stored in eeprom
+* Temperature range: 50...500 °C (default: 75)
+
+
+PID settings:
+=============
+
+* Config mode is entered by pressing both buttons _at the same time_
+* When PID settings are changed, the heater is always off
+* The state of the fan is not changed when entering config mode
+* The display will show an abbreviated name for each parameter
+* Going to the next one is done by pressing both buttons _at the same time_
+
+  P) 	       p_gain    0...999 (default: 650)
+  i)	       i_gain    0...999 (default:  15)
+  d)  	       d_gain    0...999 (default: 750)
+ith)      i_threshold    0...100 (default:  45)
+tof) temp_offset_corr -100...100 (default:  33)
+
+* All parameters stored / loaded from EEPROM are checked if within range
+* Invalid parameters are reset to their minimum value when stored / loaded
+
+i_threshold: temperature range (+-) that determines the switch between PD and PID
+             if the temperature is far away from the setpoint, PD-control is used
+	     if the temperature is within range, PID-control is used to stabilize
+
+temp_offset_corr: can be used to correct a temperature difference between the display
+                  and the temperature measured with an external sensor at the nozzle
+
+		  increase, if you measure too high a temperature			
+		  decrease, if measured temperature is too low
+
+
+Restoring default values:
+=========================
+
+* Turn the device off
+* Press both buttons at the same time
+* The device will enter the PID settings menu with default value restored
+* Either change the values again or turn the device off
+
+
+Error behaviour:
+================
+
+* If the wand is disconnected or the temperature is above 600°C, the heater will
+  be turned off and the display shows "FAN" until the error goes away
+
