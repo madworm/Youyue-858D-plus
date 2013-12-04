@@ -7,7 +7,7 @@
  *
  * Other identifiers (see images)
  *
- * V1.05 PID temperature control + heater indicator + persistent setpoint storage + better button handling
+ * V1.1 PID temperature control + heater indicator + persistent setpoint storage + better button handling
  *
  * 2013 - Robert Spitzenpfeil
  *
@@ -46,12 +46,12 @@
 
 uint8_t framebuffer[6] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };	// dig0, dig1, dig2, dot0, dot1, dot2 - couting starts from right side
 
-CPARAM p_gain = { 0, 999, 0, 2, 3 };	// min, max, value, eep_addr_high, eep_addr_low
-CPARAM i_gain = { 0, 999, 0, 4, 5 };
-CPARAM d_gain = { 0, 999, 0, 6, 7 };
-CPARAM i_thresh = { 0, 100, 0, 8, 9 };
-CPARAM temp_offset_corr = { -100, 100, 0, 10, 11 };
-CPARAM temp_setpoint = { 50, 500, 0, 12, 13 };
+CPARAM p_gain = { 0, 999, P_GAIN_DEFAULT, 2, 3 };	// min, max, value, eep_addr_high, eep_addr_low
+CPARAM i_gain = { 0, 999, I_GAIN_DEFAULT, 4, 5 };
+CPARAM d_gain = { 0, 999, D_GAIN_DEFAULT, 6, 7 };
+CPARAM i_thresh = { 0, 100, I_THRESH_DEFAULT, 8, 9 };
+CPARAM temp_offset_corr = { -100, 100, TEMP_OFFSET_CORR_DEFAULT, 10, 11 };
+CPARAM temp_setpoint = { 50, 500, TEMP_SETPOINT_DEFAULT, 12, 13 };
 
 void setup(void)
 {
