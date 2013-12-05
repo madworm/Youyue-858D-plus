@@ -7,13 +7,17 @@
  *
  * Other identifiers (see images)
  *
- * V1.1 PID temperature control + heater indicator + persistent setpoint storage + better button handling
+ * V1.11 PID temperature control + heater indicator + persistent setpoint storage + better button handling
  *
  * 2013 - Robert Spitzenpfeil
  *
  * Licence: GNU GPL v2
  *
  */
+
+#define FW_MAJOR_V 1
+#define FW_MINOR_V_A 1
+#define FW_MINOR_V_B 1
 
 /*
  * PC5: FAN-speed (A5 in Arduino lingo) - NOT USED SO FAR (OK)
@@ -80,27 +84,15 @@ void setup(void)
 	eep_load(&temp_setpoint);
 
 	if (SW0_PRESSED && SW1_PRESSED) {
-		p_gain.value = P_GAIN_DEFAULT;
-		i_gain.value = I_GAIN_DEFAULT;
-		d_gain.value = D_GAIN_DEFAULT;
-		i_thresh.value = I_THRESH_DEFAULT;
-		temp_offset_corr.value = TEMP_OFFSET_CORR_DEFAULT;
-		temp_setpoint.value = TEMP_SETPOINT_DEFAULT;
-
-		eep_save(&p_gain);
-		eep_save(&i_gain);
-		eep_save(&d_gain);
-		eep_save(&i_thresh);
-		eep_save(&temp_offset_corr);
-		eep_save(&temp_setpoint);
+		restore_default_conf();
 	}
 	//Serial.begin(9600);
-
 	//segm_test();
 	//char_test();
 	fan_test();
 
-	setup_timer1_ctc();
+	setup_timer1_ctc();	// needed for background display refresh
+	show_firmware_version();
 }
 
 void loop(void)
@@ -418,6 +410,23 @@ void eep_load(CPARAM * param)
 	}
 }
 
+void restore_default_conf(void)
+{
+	p_gain.value = P_GAIN_DEFAULT;
+	i_gain.value = I_GAIN_DEFAULT;
+	d_gain.value = D_GAIN_DEFAULT;
+	i_thresh.value = I_THRESH_DEFAULT;
+	temp_offset_corr.value = TEMP_OFFSET_CORR_DEFAULT;
+	temp_setpoint.value = TEMP_SETPOINT_DEFAULT;
+
+	eep_save(&p_gain);
+	eep_save(&i_gain);
+	eep_save(&d_gain);
+	eep_save(&i_thresh);
+	eep_save(&temp_offset_corr);
+	eep_save(&temp_setpoint);
+}
+
 void set_dot(void)
 {
 	framebuffer[3] = '.';
@@ -578,6 +587,12 @@ void display_char(uint8_t digit, uint8_t character)
 	case 'H':
 		PORTD = ~0x6A;	// 'h'
 		break;
+	case 'S':
+		PORTD = ~0x6D;	// 'S'
+		break;
+	case 'L':
+		PORTD = ~0x0E;	// 'L'
+		break;
 	case 255:
 		PORTD = 0xFF;	// segments OFF
 		break;
@@ -625,6 +640,18 @@ void fan_test(void)
 	FAN_ON;
 	delay(2000);
 	FAN_OFF;
+}
+
+void show_firmware_version(void)
+{
+	framebuffer[0] = FW_MINOR_V_B;	// dig0
+	framebuffer[1] = FW_MINOR_V_A;	// dig1
+	framebuffer[2] = FW_MAJOR_V;	// dig2
+	framebuffer[3] = 255;	// dig0.dot
+	framebuffer[4] = 255;	// dig1.dot
+	framebuffer[5] = '.';	// dit2.dot
+	delay(2000);
+	clear_display();
 }
 
 void setup_timer1_ctc(void)
