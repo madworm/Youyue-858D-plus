@@ -7,8 +7,8 @@
  *
  * Other identifiers (see images)
  *
- * V1.11 PID temperature control + heater indicator + persistent setpoint storage + better button handling
- *
+ * V1.12 PID temperature control + heater indicator + persistent setpoint storage + better button handling
+ *							     + sleep timer
  * 2013 - Robert Spitzenpfeil
  *
  * Licence: GNU GPL v2
@@ -17,7 +17,7 @@
 
 #define FW_MAJOR_V 1
 #define FW_MINOR_V_A 1
-#define FW_MINOR_V_B 1
+#define FW_MINOR_V_B 2
 
 /*
  * PC5: FAN-speed (A5 in Arduino lingo) - NOT USED SO FAR (OK)
@@ -56,6 +56,7 @@ CPARAM d_gain = { 0, 999, D_GAIN_DEFAULT, 6, 7 };
 CPARAM i_thresh = { 0, 100, I_THRESH_DEFAULT, 8, 9 };
 CPARAM temp_offset_corr = { -100, 100, TEMP_OFFSET_CORR_DEFAULT, 10, 11 };
 CPARAM temp_setpoint = { 50, 500, TEMP_SETPOINT_DEFAULT, 12, 13 };
+CPARAM slp_timeout = { 0, 30, SLP_TIMEOUT_DEFAULT, 14, 15 };
 
 void setup(void)
 {
@@ -82,11 +83,13 @@ void setup(void)
 	eep_load(&i_thresh);
 	eep_load(&temp_offset_corr);
 	eep_load(&temp_setpoint);
+	eep_load(&slp_timeout);
 
 	if (SW0_PRESSED && SW1_PRESSED) {
 		restore_default_conf();
 	}
 	//Serial.begin(9600);
+
 	//segm_test();
 	//char_test();
 	fan_test();
@@ -119,6 +122,8 @@ void loop(void)
 	static uint8_t temp_setpoint_saved = 1;
 	static int32_t temp_setpoint_saved_time = 0;
 
+	static uint32_t heater_start_time = 0;
+
 	temp_inst_previous = temp_inst;
 	temp_inst = analogRead(A0) + temp_offset_corr.value;	// approx. temp in °C
 
@@ -127,7 +132,8 @@ void loop(void)
 	}
 
 	if (REEDSW_OPEN && (temp_setpoint.value >= temp_setpoint.value_min)
-	    && (temp_average < MAX_TEMP_ERR)) {
+	    && (temp_average < MAX_TEMP_ERR) && ((millis() - heater_start_time) < ((uint32_t) (slp_timeout.value) * 60 * 1000))) {
+
 		// !! DANGER !!
 		FAN_ON;
 
@@ -169,6 +175,10 @@ void loop(void)
 			heater_ctr = 0;
 		}
 
+	} else if (REEDSW_CLOSED) {
+		HEATER_OFF;
+		heater_start_time = millis();
+		clear_dot();
 	} else {
 		HEATER_OFF;
 		clear_dot();
@@ -201,7 +211,7 @@ void loop(void)
 		change_config_parameter(&d_gain, "D");
 		change_config_parameter(&i_thresh, "ITH");
 		change_config_parameter(&temp_offset_corr, "TOF");
-
+		change_config_parameter(&slp_timeout, "SLP");
 	} else if (SW0_PRESSED) {
 		button_input_time = millis();
 		button_counter++;
@@ -418,6 +428,7 @@ void restore_default_conf(void)
 	i_thresh.value = I_THRESH_DEFAULT;
 	temp_offset_corr.value = TEMP_OFFSET_CORR_DEFAULT;
 	temp_setpoint.value = TEMP_SETPOINT_DEFAULT;
+	slp_timeout.value = SLP_TIMEOUT_DEFAULT;
 
 	eep_save(&p_gain);
 	eep_save(&i_gain);
@@ -425,6 +436,7 @@ void restore_default_conf(void)
 	eep_save(&i_thresh);
 	eep_save(&temp_offset_corr);
 	eep_save(&temp_setpoint);
+	eep_save(&slp_timeout);
 }
 
 void set_dot(void)

@@ -67,6 +67,15 @@ Restoring default values:
 * Either change the values again or turn the device off
 
 
+Sleep timeout:
+==============
+
+SLP)     slp_timeout  0...30 (default: 5)
+
+If the wand is not placed into the craddle for longer than slp_timeout, the heater
+is switched off, but the fan keeps running indefinitely.
+
+
 Error behaviour:
 ================
 
