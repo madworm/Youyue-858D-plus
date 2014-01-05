@@ -45,7 +45,7 @@ typedef struct CPARAM {
 
 #define P_GAIN_DEFAULT 650.0
 #define I_GAIN_DEFAULT 15.0
-#define D_GAIN_DEFAULT 325.0
+#define D_GAIN_DEFAULT 500.0
 #define I_THRESH_DEFAULT 45
 #define P_GAIN_SCALING 100.0
 #define I_GAIN_SCALING 10000.0
@@ -54,7 +54,7 @@ typedef struct CPARAM {
 #define TEMP_OFFSET_CORR_DEFAULT 33
 #define TEMP_SETPOINT_DEFAULT 75
 
-#define TEMP_AVERAGES_DEFAULT 250L
+#define TEMP_AVERAGES_DEFAULT 350L
 #define TEMP_REACHED_MARGIN 3
 
 #define MAX_TEMP_ERR 550L
@@ -63,6 +63,6 @@ typedef struct CPARAM {
 #define FAN_OFF_TEMP 45
 #define FAN_ON_TEMP 60
 
-#define SLP_TIMEOUT_DEFAULT 5
+#define SLP_TIMEOUT_DEFAULT 10
 
 #endif
