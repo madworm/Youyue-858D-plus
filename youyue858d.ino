@@ -7,9 +7,9 @@
  *
  * Other identifiers (see images)
  *
- * V1.12 PID temperature control + heater indicator + persistent setpoint storage + better button handling
- *							     + sleep timer
- * 2013 - Robert Spitzenpfeil
+ * V1.13 PID temperature control + heater indicator + persistent setpoint storage + better button handling
+ *							     + sleep timer + configurable temperature averaging
+ * 2014 - Robert Spitzenpfeil
  *
  * Licence: GNU GPL v2
  *
@@ -17,7 +17,7 @@
 
 #define FW_MAJOR_V 1
 #define FW_MINOR_V_A 1
-#define FW_MINOR_V_B 2
+#define FW_MINOR_V_B 3
 
 /*
  * PC5: FAN-speed (A5 in Arduino lingo) - NOT USED SO FAR (OK)
@@ -56,7 +56,8 @@ CPARAM d_gain = { 0, 999, D_GAIN_DEFAULT, 6, 7 };
 CPARAM i_thresh = { 0, 100, I_THRESH_DEFAULT, 8, 9 };
 CPARAM temp_offset_corr = { -100, 100, TEMP_OFFSET_CORR_DEFAULT, 10, 11 };
 CPARAM temp_setpoint = { 50, 500, TEMP_SETPOINT_DEFAULT, 12, 13 };
-CPARAM slp_timeout = { 0, 30, SLP_TIMEOUT_DEFAULT, 14, 15 };
+CPARAM temp_averages = { 1, 999, TEMP_AVERAGES_DEFAULT, 14, 15 };
+CPARAM slp_timeout = { 0, 30, SLP_TIMEOUT_DEFAULT, 16, 17 };
 
 void setup(void)
 {
@@ -83,6 +84,7 @@ void setup(void)
 	eep_load(&i_thresh);
 	eep_load(&temp_offset_corr);
 	eep_load(&temp_setpoint);
+	eep_load(&temp_averages);
 	eep_load(&slp_timeout);
 
 	if (SW0_PRESSED && SW1_PRESSED) {
@@ -189,9 +191,9 @@ void loop(void)
 	temp_accu += temp_inst;
 	temp_avg_ctr++;
 
-	if (temp_avg_ctr == TEMP_AVERAGES) {
+	if (temp_avg_ctr == (uint16_t) (temp_averages.value)) {
 		temp_average_previous = temp_average;
-		temp_average = temp_accu / TEMP_AVERAGES;
+		temp_average = temp_accu / temp_averages.value;
 		temp_accu = 0;
 		temp_avg_ctr = 0;
 	}
@@ -211,6 +213,7 @@ void loop(void)
 		change_config_parameter(&d_gain, "D");
 		change_config_parameter(&i_thresh, "ITH");
 		change_config_parameter(&temp_offset_corr, "TOF");
+		change_config_parameter(&temp_averages, "AVG");
 		change_config_parameter(&slp_timeout, "SLP");
 	} else if (SW0_PRESSED) {
 		button_input_time = millis();
@@ -428,6 +431,7 @@ void restore_default_conf(void)
 	i_thresh.value = I_THRESH_DEFAULT;
 	temp_offset_corr.value = TEMP_OFFSET_CORR_DEFAULT;
 	temp_setpoint.value = TEMP_SETPOINT_DEFAULT;
+	temp_averages.value = TEMP_AVERAGES_DEFAULT;
 	slp_timeout.value = SLP_TIMEOUT_DEFAULT;
 
 	eep_save(&p_gain);
@@ -436,6 +440,7 @@ void restore_default_conf(void)
 	eep_save(&i_thresh);
 	eep_save(&temp_offset_corr);
 	eep_save(&temp_setpoint);
+	eep_save(&temp_averages);
 	eep_save(&slp_timeout);
 }
 
@@ -537,79 +542,85 @@ void display_char(uint8_t digit, uint8_t character)
 
 	switch (character) {
 	case 0:
-		PORTD = ~0xAF;	// activate segments for displaying a '0'
+		PORTD = (uint8_t) (~0xAF);	// activate segments for displaying a '0'
 		break;
 	case 1:
-		PORTD = ~0xA0;	// '1'
+		PORTD = (uint8_t) (~0xA0);	// '1'
 		break;
 	case 2:
-		PORTD = ~0xC7;	// '2'
+		PORTD = (uint8_t) (~0xC7);	// '2'
 		break;
 	case 3:
-		PORTD = ~0xE5;	// '3'
+		PORTD = (uint8_t) (~0xE5);	// '3'
 		break;
 	case 4:
-		PORTD = ~0xE8;	// '4'
+		PORTD = (uint8_t) (~0xE8);	// '4'
 		break;
 	case 5:
-		PORTD = ~0x6D;	// '5'              
+		PORTD = (uint8_t) (~0x6D);	// '5'
 		break;
 	case 6:
-		PORTD = ~0x6F;	// '6'              
+		PORTD = (uint8_t) (~0x6F);	// '6'
 		break;
 	case 7:
-		PORTD = ~0xA1;	// '7'              
+		PORTD = (uint8_t) (~0xA1);	// '7'
 		break;
 	case 8:
-		PORTD = ~0xEF;	// '8'              
+		PORTD = (uint8_t) (~0xEF);	// '8'
 		break;
 	case 9:
-		PORTD = ~0xE9;	// '9'              
+		PORTD = (uint8_t) (~0xE9);	// '9'
 		break;
 	case '-':
-		PORTD = ~0x40;	// '-'              
+		PORTD = (uint8_t) (~0x40);	// '-'
 		break;
 	case 'O':
-		PORTD = ~0x66;	// 'o'
+		PORTD = (uint8_t) (~0x66);	// 'o'
 		break;
 	case '.':
-		PORTD = ~0x10;	// '.'
+		PORTD = (uint8_t) (~0x10);	// '.'
 		break;
 	case 'F':
-		PORTD = ~0x4B;	// 'F'
+		PORTD = (uint8_t) (~0x4B);	// 'F'
 		break;
 	case 'A':
-		PORTD = ~0xEB;	// 'A'
+		PORTD = (uint8_t) (~0xEB);	// 'A'
 		break;
 	case 'N':
-		PORTD = ~0xAB;	// 'N'
+		PORTD = (uint8_t) (~0xAB);	// 'N'
 		break;
 	case 'P':
-		PORTD = ~0xCB;	// 'P'
+		PORTD = (uint8_t) (~0xCB);	// 'P'
 		break;
 	case 'I':
-		PORTD = ~0x20;	// 'i'
+		PORTD = (uint8_t) (~0x20);	// 'i'
 		break;
 	case 'D':
-		PORTD = ~0xE6;	// 'd'
+		PORTD = (uint8_t) (~0xE6);	// 'd'
 		break;
 	case 'T':
-		PORTD = ~0x4E;	// 't'
+		PORTD = (uint8_t) (~0x4E);	// 't'
 		break;
 	case 'H':
-		PORTD = ~0x6A;	// 'h'
+		PORTD = (uint8_t) (~0x6A);	// 'h'
 		break;
 	case 'S':
-		PORTD = ~0x6D;	// 'S'
+		PORTD = (uint8_t) (~0x6D);	// 'S'
 		break;
 	case 'L':
-		PORTD = ~0x0E;	// 'L'
+		PORTD = (uint8_t) (~0x0E);	// 'L'
+		break;
+	case 'V':
+		PORTD = (uint8_t) (~0x26);	// 'v'
+		break;
+	case 'G':
+		PORTD = (uint8_t) (~0x6F);	// 'G'
 		break;
 	case 255:
-		PORTD = 0xFF;	// segments OFF
+		PORTD = (uint8_t) (0xFF);	// segments OFF
 		break;
 	default:
-		PORTD = ~0x10;	// '.'              
+		PORTD = (uint8_t) (~0x10);	// '.'
 		break;
 	}
 }
