@@ -80,9 +80,16 @@ Error behaviour:
 ================
 
 * If the wand is disconnected or the thermo-couple has failed or the temperature
-  is above MAX_TEMP_ERR (600°C), the device will go into a "safe mode".
+  is above MAX_TEMP_ERR (550°C), the device will go into a "safe mode".
   
   The heater will be turned off permanently, the fan will be turned on 
   to allow fast cooldown and the display will blink "FAN" until power is cycled.
+
+* If the device is powered up and the wand is not in the cradle, an error message
+  will be displayed. Put the wand into the cradle and cycle power for normal
+  operation.
+
+  This should avoid any issues with the device being accidentally powered on 
+  with the wand on the table (e.g. after power outage).
 
 

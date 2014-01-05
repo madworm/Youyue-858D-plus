@@ -7,7 +7,7 @@
  *
  * Other identifiers (see images)
  *
- * V1.13 PID temperature control + heater indicator + persistent setpoint storage + better button handling
+ * V1.14 PID temperature control + heater indicator + persistent setpoint storage + better button handling
  *							     + sleep timer + configurable temperature averaging
  * 2014 - Robert Spitzenpfeil
  *
@@ -17,7 +17,7 @@
 
 #define FW_MAJOR_V 1
 #define FW_MINOR_V_A 1
-#define FW_MINOR_V_B 3
+#define FW_MINOR_V_B 4
 
 /*
  * PC5: FAN-speed (A5 in Arduino lingo) - NOT USED SO FAR (OK)
@@ -660,9 +660,22 @@ void char_test(void)
 
 void fan_test(void)
 {
-	FAN_ON;
-	delay(2000);
-	FAN_OFF;
+	HEATER_OFF;
+
+	if (REEDSW_CLOSED) {
+		FAN_ON;
+		delay(2000);
+		FAN_OFF;
+	} else {
+		// if the wand is not in the cradle when powered up, go into a safe mode
+		// and display an error
+		while (1) {
+			display_number(9999);	// display "FAN"
+			delay(1000);
+			clear_display();
+			delay(1000);
+		}
+	}
 }
 
 void show_firmware_version(void)
