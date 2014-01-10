@@ -94,10 +94,11 @@ void setup(void)
 
 	//segm_test();
 	//char_test();
-	fan_test();
 
 	setup_timer1_ctc();	// needed for background display refresh
 	show_firmware_version();
+
+	fan_test();
 }
 
 void loop(void)
