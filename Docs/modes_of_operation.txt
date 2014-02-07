@@ -1,8 +1,9 @@
 
 
-Once the device (cold) is turned on, it will do the following:
-==============================================================
+Once the device (cold, wand in cradle) is turned on, it will do the following:
+==============================================================================
 
+* Display the firmware version
 * Start the fan for about 2 seconds and turn it off again
 * Either display "---" if the temperature is below 40°C (safe to touch)
 * Or display the current temperature if the temperature is above 40°C
@@ -62,7 +63,8 @@ Restoring default values:
 =========================
 
 * Turn the device off
-* Press both buttons at the same time
+* Press and hold both buttons at the same time
+* Turn the device on and wait a couple of seconds
 * The device will enter the PID settings menu with default value restored
 * Either change the values again or turn the device off
 
