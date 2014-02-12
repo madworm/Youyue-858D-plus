@@ -7,7 +7,7 @@
  *
  * Other identifiers (see images)
  *
- * V1.15 PID temperature control + heater indicator + persistent setpoint storage + better button handling
+ * V1.16 PID temperature control + heater indicator + persistent setpoint storage + better button handling
  *							     + sleep timer + configurable temperature averaging
  * 2014 - Robert Spitzenpfeil
  *
@@ -17,10 +17,10 @@
 
 #define FW_MAJOR_V 1
 #define FW_MINOR_V_A 1
-#define FW_MINOR_V_B 5
+#define FW_MINOR_V_B 6
 
 /*
- * PC5: FAN-speed (A5 in Arduino lingo) - NOT USED SO FAR (OK)
+ * PC5: FAN-speed (A5 in Arduino lingo) (OK)
  * PC3: TIP122.base --> FAN (OK)
  * PC0: ADC <-- amplif. thermo couple voltage (A0 in Arduino lingo) (OK)
  * #21: AREF <--- about 2.5V as analog reference for ADC
@@ -58,6 +58,8 @@ CPARAM temp_offset_corr = { -100, 100, TEMP_OFFSET_CORR_DEFAULT, 10, 11 };
 CPARAM temp_setpoint = { 50, 500, TEMP_SETPOINT_DEFAULT, 12, 13 };
 CPARAM temp_averages = { 1, 999, TEMP_AVERAGES_DEFAULT, 14, 15 };
 CPARAM slp_timeout = { 0, 30, SLP_TIMEOUT_DEFAULT, 16, 17 };
+CPARAM fan_speed_min = { 120, 180, FAN_SPEED_MIN_DEFAULT, 18, 19 };
+CPARAM fan_speed_max = { 300, 400, FAN_SPEED_MAX_DEFAULT, 20, 21 };
 
 void setup(void)
 {
@@ -86,6 +88,8 @@ void setup(void)
 	eep_load(&temp_setpoint);
 	eep_load(&temp_averages);
 	eep_load(&slp_timeout);
+	eep_load(&fan_speed_min);
+	eep_load(&fan_speed_max);
 
 	if (SW0_PRESSED && SW1_PRESSED) {
 		restore_default_conf();
@@ -216,6 +220,8 @@ void loop(void)
 		change_config_parameter(&temp_offset_corr, "TOF");
 		change_config_parameter(&temp_averages, "AVG");
 		change_config_parameter(&slp_timeout, "SLP");
+		change_config_parameter(&fan_speed_min, "F-L");
+		change_config_parameter(&fan_speed_max, "F-H");
 	} else if (SW0_PRESSED) {
 		button_input_time = millis();
 		button_counter++;
@@ -434,6 +440,8 @@ void restore_default_conf(void)
 	temp_setpoint.value = TEMP_SETPOINT_DEFAULT;
 	temp_averages.value = TEMP_AVERAGES_DEFAULT;
 	slp_timeout.value = SLP_TIMEOUT_DEFAULT;
+	fan_speed_min.value = FAN_SPEED_MIN_DEFAULT;
+	fan_speed_max.value = FAN_SPEED_MAX_DEFAULT;
 
 	eep_save(&p_gain);
 	eep_save(&i_gain);
@@ -443,6 +451,8 @@ void restore_default_conf(void)
 	eep_save(&temp_setpoint);
 	eep_save(&temp_averages);
 	eep_save(&slp_timeout);
+	eep_save(&fan_speed_min);
+	eep_save(&fan_speed_max);
 }
 
 void set_dot(void)
@@ -663,10 +673,34 @@ void fan_test(void)
 {
 	HEATER_OFF;
 
+	uint16_t fan_speed;
+
 	if (REEDSW_CLOSED) {
+
 		FAN_ON;
-		delay(2000);
+		delay(3000);
+		fan_speed = analogRead(A5);
+
+		/*
+		   while(1) {
+		   fan_speed = analogRead(A5);
+		   display_number(fan_speed);  
+		   }
+		 */
+
+		if ((fan_speed < fan_speed_min.value) || (fan_speed > fan_speed_max.value)) {
+			// the fan is not working as it should
+			FAN_OFF;
+			while (1) {
+				display_number(9999);
+				delay(1000);
+				clear_display();
+				delay(1000);
+			}
+		}
+
 		FAN_OFF;
+
 	} else {
 		// if the wand is not in the cradle when powered up, go into a safe mode
 		// and display an error

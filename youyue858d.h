@@ -63,6 +63,9 @@ typedef struct CPARAM {
 #define FAN_OFF_TEMP 45
 #define FAN_ON_TEMP 60
 
+#define FAN_SPEED_MIN_DEFAULT 150UL
+#define FAN_SPEED_MAX_DEFAULT 315UL
+
 #define SLP_TIMEOUT_DEFAULT 10
 
 #endif
