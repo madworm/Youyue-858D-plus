@@ -7,7 +7,7 @@
  *
  * Other identifiers (see images)
  *
- * V1.14 PID temperature control + heater indicator + persistent setpoint storage + better button handling
+ * V1.15 PID temperature control + heater indicator + persistent setpoint storage + better button handling
  *							     + sleep timer + configurable temperature averaging
  * 2014 - Robert Spitzenpfeil
  *
@@ -17,7 +17,7 @@
 
 #define FW_MAJOR_V 1
 #define FW_MINOR_V_A 1
-#define FW_MINOR_V_B 4
+#define FW_MINOR_V_B 5
 
 /*
  * PC5: FAN-speed (A5 in Arduino lingo) - NOT USED SO FAR (OK)
