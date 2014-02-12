@@ -13,6 +13,7 @@ Fan controls:
 =============
 
 * The fan-speed is set with the potentiometer
+* If the fan-speed is erratic, you need a new potentiometer
 * If the wand is in the craddle and is cold (< 45°C), then fan is off
 * If the wand is in the craddle and is too hot (> 60°C), the fan is on
 * If the wand is out of the craddle, the fan is always on
@@ -59,8 +60,8 @@ temp_offset_corr: can be used to correct a temperature difference between the di
 		  decrease, if measured temperature is too low
 
 
-Restoring default values:
-=========================
+Restoring default values (required once after uploading the firmware):
+======================================================================
 
 * Turn the device off
 * Press and hold both buttons at the same time
@@ -94,4 +95,5 @@ Error behaviour:
   This should avoid any issues with the device being accidentally powered on 
   with the wand on the table (e.g. after power outage).
 
-
+* If the fan-speed on power-up (fan-test) is out of range (F-L, F-h config parameters),
+  an error message "FAN" will be displayed.
