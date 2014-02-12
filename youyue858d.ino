@@ -15,6 +15,18 @@
  *
  */
 
+/*
+ * You need to reset the config parameters to default values after flashing the firmware!
+ *
+ *  0) Fully reassemble the device.
+ *  1) Attach the heater and place it into its cradle.
+ *  2) Plug the power cord into the station.
+ *  3) Press and hold both buttons and power-on the device. Wait for a few seconds.
+ *  4) If you don't see any error message (e.g. "FAN"), turn off and on again.
+ *
+ *  Make sure to read and understand '/Docs/modes_of_operation.txt'
+ */
+
 #define FW_MAJOR_V 1
 #define FW_MINOR_V_A 1
 #define FW_MINOR_V_B 6
