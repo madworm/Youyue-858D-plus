@@ -16,20 +16,12 @@
  */
 
 /*
- * You need to reset the config parameters to default values after flashing the firmware!
- *
- *  0) Fully reassemble the device.
- *  1) Attach the heater and place it into its cradle.
- *  2) Plug the power cord into the station.
- *  3) Press and hold both buttons and power-on the device. Wait for a few seconds.
- *  4) If you don't see any error message (e.g. "FAN"), turn off and on again.
- *
  *  Make sure to read and understand '/Docs/modes_of_operation.txt'
  */
 
 #define FW_MAJOR_V 1
 #define FW_MINOR_V_A 1
-#define FW_MINOR_V_B 6
+#define FW_MINOR_V_B 7
 
 /*
  * PC5: FAN-speed (A5 in Arduino lingo) (OK)
@@ -92,6 +84,18 @@ void setup(void)
 
 	analogReference(EXTERNAL);	// use external 2.5V as ADC reference voltage (VCC / 2)
 
+	if (EEPROM.read(0) != 0x22) {
+		// check if the firmware was just flashed and the EEPROM is therefore empty
+		// assumption: full chip erase with ISP programmer (preserve eeprom fuse NOT set!)
+		// if so, restore default parameter values & write a 'hint' to address 0
+		restore_default_conf();
+		EEPROM.write(0, 0x22);
+	}
+
+	if (SW0_PRESSED && SW1_PRESSED) {
+		restore_default_conf();
+	}
+
 	eep_load(&p_gain);
 	eep_load(&i_gain);
 	eep_load(&d_gain);
@@ -103,9 +107,6 @@ void setup(void)
 	eep_load(&fan_speed_min);
 	eep_load(&fan_speed_max);
 
-	if (SW0_PRESSED && SW1_PRESSED) {
-		restore_default_conf();
-	}
 	//Serial.begin(9600);
 
 	//segm_test();

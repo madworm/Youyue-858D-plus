@@ -60,8 +60,8 @@ temp_offset_corr: can be used to correct a temperature difference between the di
 		  decrease, if measured temperature is too low
 
 
-Restoring default values (required once after uploading the firmware):
-======================================================================
+Restoring default:
+==================
 
 * Turn the device off
 * Press and hold both buttons at the same time
