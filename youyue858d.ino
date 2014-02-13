@@ -21,7 +21,7 @@
 
 #define FW_MAJOR_V 1
 #define FW_MINOR_V_A 1
-#define FW_MINOR_V_B 7
+#define FW_MINOR_V_B 8
 
 /*
  * PC5: FAN-speed (A5 in Arduino lingo) (OK)
@@ -296,7 +296,7 @@ void loop(void)
 			temp_setpoint_saved_time = millis();
 			temp_setpoint_saved = 1;
 		} else if (temp_average <= SAFE_TO_TOUCH_TEMP) {
-			display_number(6666);
+			display_string("---");
 		} else if (temp_average >= MAX_TEMP_ERR) {
 			// something might have gone terribly wrong
 			HEATER_OFF;
@@ -312,7 +312,7 @@ void loop(void)
 				// * thermo couple has failed
 				// * true over-temperature condition
 				//
-				display_number(9999);	// display "FAN"
+				display_string("FAN");
 				delay(1000);
 				clear_display();
 				delay(1000);
@@ -342,7 +342,7 @@ void clear_display(void)
 	framebuffer[5] = 255;
 }
 
-void change_config_parameter(CPARAM * param, const char *string)
+void display_string(const char *string)
 {
 	clear_display();
 
@@ -356,7 +356,11 @@ void change_config_parameter(CPARAM * param, const char *string)
 			framebuffer[2 - ctr] = string[ctr];
 		}
 	}
+}
 
+void change_config_parameter(CPARAM * param, const char *string)
+{
+	display_string(string);
 	delay(750);		// let the user read what is shown
 
 	uint8_t loop = 1;
@@ -508,28 +512,16 @@ void display_number(int16_t number)
 	uint8_t dig1 = 0;
 	uint8_t dig2 = 0;
 
-	if (number == 9999) {
-		dig0 = 'N';
-		dig1 = 'A';
-		dig2 = 'F';
-	} else if (number == 6666) {
-		dig0 = '-';
-		dig1 = '-';
-		dig2 = '-';
-	} else {
+	temp1 = number - (number / 100) * 100;
+	temp2 = temp1 - (temp1 / 10) * 10;
 
-		temp1 = number - (number / 100) * 100;
-		temp2 = temp1 - (temp1 / 10) * 10;
-
-		dig0 = (uint8_t) (temp2);
-		dig1 = (uint8_t) ((temp1 - temp2) / 10);
-		dig2 = (uint8_t) ((number - temp1) / 100);
-	}
+	dig0 = (uint8_t) (temp2);
+	dig1 = (uint8_t) ((temp1 - temp2) / 10);
+	dig2 = (uint8_t) ((number - temp1) / 100);
 
 	framebuffer[0] = dig0;
 	framebuffer[1] = dig1;
 	framebuffer[2] = dig2;
-
 }
 
 void display_char(uint8_t digit, uint8_t character)
@@ -705,7 +697,7 @@ void fan_test(void)
 			// the fan is not working as it should
 			FAN_OFF;
 			while (1) {
-				display_number(9999);
+				display_string("FAN");
 				delay(1000);
 				clear_display();
 				delay(1000);
@@ -718,7 +710,7 @@ void fan_test(void)
 		// if the wand is not in the cradle when powered up, go into a safe mode
 		// and display an error
 		while (1) {
-			display_number(9999);	// display "FAN"
+			display_string("FAN");
 			delay(1000);
 			clear_display();
 			delay(1000);
