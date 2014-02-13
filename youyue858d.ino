@@ -7,8 +7,8 @@
  *
  * Other identifiers (see images)
  *
- * V1.16 PID temperature control + heater indicator + persistent setpoint storage + better button handling
- *							     + sleep timer + configurable temperature averaging
+ * V1.19 
+ *
  * 2014 - Robert Spitzenpfeil
  *
  * Licence: GNU GPL v2
@@ -21,7 +21,7 @@
 
 #define FW_MAJOR_V 1
 #define FW_MINOR_V_A 1
-#define FW_MINOR_V_B 8
+#define FW_MINOR_V_B 9
 
 /*
  * PC5: FAN-speed (A5 in Arduino lingo) (OK)
@@ -54,16 +54,16 @@
 
 uint8_t framebuffer[6] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };	// dig0, dig1, dig2, dot0, dot1, dot2 - couting starts from right side
 
-CPARAM p_gain = { 0, 999, P_GAIN_DEFAULT, 2, 3 };	// min, max, value, eep_addr_high, eep_addr_low
-CPARAM i_gain = { 0, 999, I_GAIN_DEFAULT, 4, 5 };
-CPARAM d_gain = { 0, 999, D_GAIN_DEFAULT, 6, 7 };
-CPARAM i_thresh = { 0, 100, I_THRESH_DEFAULT, 8, 9 };
-CPARAM temp_offset_corr = { -100, 100, TEMP_OFFSET_CORR_DEFAULT, 10, 11 };
-CPARAM temp_setpoint = { 50, 500, TEMP_SETPOINT_DEFAULT, 12, 13 };
-CPARAM temp_averages = { 1, 999, TEMP_AVERAGES_DEFAULT, 14, 15 };
-CPARAM slp_timeout = { 0, 30, SLP_TIMEOUT_DEFAULT, 16, 17 };
-CPARAM fan_speed_min = { 120, 180, FAN_SPEED_MIN_DEFAULT, 18, 19 };
-CPARAM fan_speed_max = { 300, 400, FAN_SPEED_MAX_DEFAULT, 20, 21 };
+CPARAM p_gain = { 0, 999, P_GAIN_DEFAULT, P_GAIN_DEFAULT, 2, 3 };	// min, max, default, value, eep_addr_high, eep_addr_low
+CPARAM i_gain = { 0, 999, I_GAIN_DEFAULT, I_GAIN_DEFAULT, 4, 5 };
+CPARAM d_gain = { 0, 999, D_GAIN_DEFAULT, D_GAIN_DEFAULT, 6, 7 };
+CPARAM i_thresh = { 0, 100, I_THRESH_DEFAULT, I_THRESH_DEFAULT, 8, 9 };
+CPARAM temp_offset_corr = { -100, 100, TEMP_OFFSET_CORR_DEFAULT, TEMP_OFFSET_CORR_DEFAULT, 10, 11 };
+CPARAM temp_setpoint = { 50, 500, TEMP_SETPOINT_DEFAULT, TEMP_SETPOINT_DEFAULT, 12, 13 };
+CPARAM temp_averages = { 1, 999, TEMP_AVERAGES_DEFAULT, TEMP_AVERAGES_DEFAULT, 14, 15 };
+CPARAM slp_timeout = { 0, 30, SLP_TIMEOUT_DEFAULT, SLP_TIMEOUT_DEFAULT, 16, 17 };
+CPARAM fan_speed_min = { 120, 180, FAN_SPEED_MIN_DEFAULT, FAN_SPEED_MIN_DEFAULT, 18, 19 };
+CPARAM fan_speed_max = { 300, 400, FAN_SPEED_MAX_DEFAULT, FAN_SPEED_MAX_DEFAULT, 20, 21 };
 
 void setup(void)
 {
@@ -427,7 +427,7 @@ void eep_save(CPARAM * param)
 		// nothing to do
 	} else {
 		// reset to sensible minimum
-		param->value = param->value_min;
+		param->value = param->value_default;
 	}
 	EEPROM.write(param->eep_addr_high, highByte(param->value));
 	EEPROM.write(param->eep_addr_low, lowByte(param->value));
@@ -443,22 +443,22 @@ void eep_load(CPARAM * param)
 		param->value = tmp;
 	} else {
 		// reset to sensible value
-		param->value = param->value_min;
+		param->value = param->value_default;
 	}
 }
 
 void restore_default_conf(void)
 {
-	p_gain.value = P_GAIN_DEFAULT;
-	i_gain.value = I_GAIN_DEFAULT;
-	d_gain.value = D_GAIN_DEFAULT;
-	i_thresh.value = I_THRESH_DEFAULT;
-	temp_offset_corr.value = TEMP_OFFSET_CORR_DEFAULT;
-	temp_setpoint.value = TEMP_SETPOINT_DEFAULT;
-	temp_averages.value = TEMP_AVERAGES_DEFAULT;
-	slp_timeout.value = SLP_TIMEOUT_DEFAULT;
-	fan_speed_min.value = FAN_SPEED_MIN_DEFAULT;
-	fan_speed_max.value = FAN_SPEED_MAX_DEFAULT;
+	p_gain.value = p_gain.value_default;
+	i_gain.value = i_gain.value_default;
+	d_gain.value = d_gain.value_default;
+	i_thresh.value = i_thresh.value_default;
+	temp_offset_corr.value = temp_offset_corr.value_default;
+	temp_setpoint.value = temp_setpoint.value_default;
+	temp_averages.value = temp_averages.value_default;
+	slp_timeout.value = slp_timeout.value_default;
+	fan_speed_min.value = fan_speed_min.value_default;
+	fan_speed_max.value = fan_speed_max.value_default;
 
 	eep_save(&p_gain);
 	eep_save(&i_gain);

@@ -4,6 +4,7 @@
 typedef struct CPARAM {
 	int16_t value_min;
 	int16_t value_max;
+	int16_t value_default;
 	int16_t value;
 	uint8_t eep_addr_high;
 	uint8_t eep_addr_low;
