@@ -28,7 +28,7 @@ Temperature control:
 * Short button press: +- 1°C
 * Long button press:  +- 10°C
 * The setpoint is stored in eeprom
-* Temperature range: 50...500 °C (default: 75)
+* Temperature range: 50...500 °C
 
 
 PID settings:
@@ -40,24 +40,25 @@ PID settings:
 * The display will show an abbreviated name for each parameter
 * Going to the next one is done by pressing both buttons _at the same time_
 
-  P) 	       p_gain    0...999 (default: 650)
-  i)	       i_gain    0...999 (default:  15)
-  d)  	       d_gain    0...999 (default: 750)
-ith)      i_threshold    0...100 (default:  45)
-tof) temp_offset_corr -100...100 (default:  33)
+  P)            p_gain    0...999
+  i)            i_gain    0...999
+  d)            d_gain    0...999
+ith)       i_threshold    0...100
+tof)  temp_offset_corr -100...100
 
 * All parameters stored / loaded from EEPROM are checked if within range
-* Invalid parameters are reset to their minimum value when stored / loaded
+* Invalid parameters are reset to their default values when stored / loaded
+  (see youyue858d.h)
 
 i_threshold: temperature range (+-) that determines the switch between PD and PID
              if the temperature is far away from the setpoint, PD-control is used
-	     if the temperature is within range, PID-control is used to stabilize
+             if the temperature is within range, PID-control is used to stabilize
 
 temp_offset_corr: can be used to correct a temperature difference between the display
                   and the temperature measured with an external sensor at the nozzle
 
-		  increase, if you measure too high a temperature			
-		  decrease, if measured temperature is too low
+                  increase, if you measure too high a temperature			
+                  decrease, if measured temperature is too low
 
 
 Restoring default:
@@ -97,3 +98,8 @@ Error behaviour:
 
 * If the fan-speed on power-up (fan-test) is out of range (F-L, F-h config parameters),
   an error message "FAN" will be displayed.
+
+  (This does not necessarily detect a stalled fan, as the feedback is just the
+   drive voltage, not an actual tacho signal!)
+
+

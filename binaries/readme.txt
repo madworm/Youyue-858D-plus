@@ -23,10 +23,3 @@ AVR FUSE calculator:
 (1) http://www.engbedded.com/fusecalc
 (2) http://eleccelerator.com/fusecalc/fusecalc.php
 
-~                                                                                                                                                
-~                                                                                                                                                
-~                                                                                                                                                
-~                                                                                                                                                
-~                                                                                                                                                
-~                                                                                                                                                
-~                                  
