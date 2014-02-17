@@ -19,6 +19,15 @@
  *  Make sure to read and understand '/Docs/modes_of_operation.txt'
  */
 
+/*
+ * If you compile and upload using the Arduino-IDE + ISP, choose this target board:
+ *
+ * LilyPad Arduino w/ ATmega168
+ *
+ * This will make sure suitable FUSE settings are used (8MHz RC-oscillator...)
+ *
+ */
+
 #define FW_MAJOR_V 1
 #define FW_MINOR_V_A 1
 #define FW_MINOR_V_B 9
