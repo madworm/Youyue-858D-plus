@@ -1,0 +1,10 @@
+
+The default PID parameters are a good starting point, but you
+might want to tweak them some more.
+
+I'll collect sets of configuration parameters that work.
+
+1) Somewhat improved overshoot behaviour:
+
+V1.19: 500, 15, 600, 30, 33, 150, 10, 150, 315
+
