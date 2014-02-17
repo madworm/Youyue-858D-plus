@@ -10,6 +10,35 @@ typedef struct CPARAM {
 	uint8_t eep_addr_low;
 } CPARAM;
 
+#if ( defined(__AVR_ATmega328P__) || defined(__AVR_ATmega328__) )
+#define PB0 0
+#define PB1 1
+#define PB2 2
+#define PB3 3
+#define PB4 4
+#define PB5 5
+#define PB6 6
+#define PB7 7
+
+#define PC0 0
+#define PC1 1
+#define PC2 2
+#define PC3 3
+#define PC4 4
+#define PC5 5
+#define PC6 6
+#define PC7 7
+
+#define PD0 0
+#define PD1 1
+#define PD2 2
+#define PD3 3
+#define PD4 4
+#define PD5 5
+#define PD6 6
+#define PD7 7
+#endif
+
 #define FAN_OFF ( PORTC |= _BV(PC3) )
 #define FAN_ON  ( PORTC &= ~_BV(PC3) )
 #define FAN_IS_ON ( !(PINC & _BV(PC3)) )

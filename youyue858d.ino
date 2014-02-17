@@ -702,7 +702,7 @@ void fan_test(void)
 		   }
 		 */
 
-		if ((fan_speed < fan_speed_min.value) || (fan_speed > fan_speed_max.value)) {
+		if ((fan_speed < (uint16_t) (fan_speed_min.value)) || (fan_speed > (uint16_t) (fan_speed_max.value))) {
 			// the fan is not working as it should
 			FAN_OFF;
 			while (1) {
