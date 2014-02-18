@@ -735,7 +735,7 @@ void show_firmware_version(void)
 	framebuffer[2] = FW_MAJOR_V;	// dig2
 	framebuffer[3] = 255;	// dig0.dot
 	framebuffer[4] = 255;	// dig1.dot
-	framebuffer[5] = '.';	// dit2.dot
+	framebuffer[5] = '.';	// dig2.dot
 	delay(2000);
 	clear_display();
 }
