@@ -7,6 +7,11 @@ Simple version:
 3) Connect the high-side of that resistor to PC2 via a 10k resistor.
 4) Enable the mod in the .h file.
 
+Measured values:
+
+fan-current at lowest speed:   74mA - ADC: ~30 (Vref = 2.5V)
+fan-current at highest speed: 174mA - ADC: ~70
+
 
 Commutation detection:
 ======================

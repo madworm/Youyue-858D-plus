@@ -73,12 +73,13 @@ CPARAM temp_offset_corr = { -100, 100, TEMP_OFFSET_CORR_DEFAULT, TEMP_OFFSET_COR
 CPARAM temp_setpoint = { 50, 500, TEMP_SETPOINT_DEFAULT, TEMP_SETPOINT_DEFAULT, 12, 13 };
 CPARAM temp_averages = { 1, 999, TEMP_AVERAGES_DEFAULT, TEMP_AVERAGES_DEFAULT, 14, 15 };
 CPARAM slp_timeout = { 0, 30, SLP_TIMEOUT_DEFAULT, SLP_TIMEOUT_DEFAULT, 16, 17 };
+
 #ifdef CURRENT_SENSE_MOD
-        CPARAM fan_current_min = { 0, 999, FAN_CURRENT_MIN_DEFAULT, FAN_CURRENT_MIN_DEFAULT, 22, 23 };
-        CPARAM fan_current_max = { 0, 999, FAN_CURRENT_MAX_DEFAULT, FAN_CURRENT_MAX_DEFAULT, 24, 25 };
+CPARAM fan_current_min = { 0, 999, FAN_CURRENT_MIN_DEFAULT, FAN_CURRENT_MIN_DEFAULT, 22, 23 };
+CPARAM fan_current_max = { 0, 999, FAN_CURRENT_MAX_DEFAULT, FAN_CURRENT_MAX_DEFAULT, 24, 25 };
 #else
-        CPARAM fan_speed_min = { 120, 180, FAN_SPEED_MIN_DEFAULT, FAN_SPEED_MIN_DEFAULT, 18, 19 };
-        CPARAM fan_speed_max = { 300, 400, FAN_SPEED_MAX_DEFAULT, FAN_SPEED_MAX_DEFAULT, 20, 21 };
+CPARAM fan_speed_min = { 120, 180, FAN_SPEED_MIN_DEFAULT, FAN_SPEED_MIN_DEFAULT, 18, 19 };
+CPARAM fan_speed_max = { 300, 400, FAN_SPEED_MAX_DEFAULT, FAN_SPEED_MAX_DEFAULT, 20, 21 };
 #endif
 
 void setup(void)
@@ -98,9 +99,9 @@ void setup(void)
 	DDRD |= 0xFF;		// all as outputs (7-seg segments)
 	DDRB |= (_BV(PB0) | _BV(PB6) | _BV(PB7));	// 7-seg digits 1,2,3
 
-        #ifdef CURRENT_SENSE_MOD
-                DDRC &= ~_BV(PC2); // set as input
-        #endif
+#ifdef CURRENT_SENSE_MOD
+	DDRC &= ~_BV(PC2);	// set as input
+#endif
 
 	analogReference(EXTERNAL);	// use external 2.5V as ADC reference voltage (VCC / 2)
 
@@ -124,13 +125,13 @@ void setup(void)
 	eep_load(&temp_setpoint);
 	eep_load(&temp_averages);
 	eep_load(&slp_timeout);
-        #ifdef CURRENT_SENSE_MOD
-                eep_load(&fan_current_min);
-                eep_load(&fan_current_max);
-        #else
-	        eep_load(&fan_speed_min);
-        	eep_load(&fan_speed_max);        
-        #endif
+#ifdef CURRENT_SENSE_MOD
+	eep_load(&fan_current_min);
+	eep_load(&fan_current_max);
+#else
+	eep_load(&fan_speed_min);
+	eep_load(&fan_speed_max);
+#endif
 
 	//Serial.begin(9600);
 
@@ -258,13 +259,13 @@ void loop(void)
 		change_config_parameter(&temp_offset_corr, "TOF");
 		change_config_parameter(&temp_averages, "AVG");
 		change_config_parameter(&slp_timeout, "SLP");
-                #ifdef CURRENT_SENSE_MOD
-                        change_config_parameter(&fan_current_min, "FCL");
-                        change_config_parameter(&fan_current_max, "FCH");
-                #else
-	        	change_config_parameter(&fan_speed_min, "FSL");
-        		change_config_parameter(&fan_speed_max, "FSH");                
-                #endif
+#ifdef CURRENT_SENSE_MOD
+		change_config_parameter(&fan_current_min, "FCL");
+		change_config_parameter(&fan_current_max, "FCH");
+#else
+		change_config_parameter(&fan_speed_min, "FSL");
+		change_config_parameter(&fan_speed_max, "FSH");
+#endif
 	} else if (SW0_PRESSED) {
 		button_input_time = millis();
 		button_counter++;
@@ -487,13 +488,13 @@ void restore_default_conf(void)
 	temp_setpoint.value = temp_setpoint.value_default;
 	temp_averages.value = temp_averages.value_default;
 	slp_timeout.value = slp_timeout.value_default;
-        #ifdef CURRENT_SENSE_MOD
-                fan_current_min.value = fan_current_min.value_default;
-                fan_current_max.value = fan_current_max.value_default;
-        #else
-        	fan_speed_min.value = fan_speed_min.value_default;
-        	fan_speed_max.value = fan_speed_max.value_default;        
-        #endif
+#ifdef CURRENT_SENSE_MOD
+	fan_current_min.value = fan_current_min.value_default;
+	fan_current_max.value = fan_current_max.value_default;
+#else
+	fan_speed_min.value = fan_speed_min.value_default;
+	fan_speed_max.value = fan_speed_max.value_default;
+#endif
 
 	eep_save(&p_gain);
 	eep_save(&i_gain);
@@ -503,13 +504,13 @@ void restore_default_conf(void)
 	eep_save(&temp_setpoint);
 	eep_save(&temp_averages);
 	eep_save(&slp_timeout);
-        #ifdef CURRENT_SENSE_MOD
-                eep_save(&fan_current_min);
-                eep_save(&fan_current_max);
-        #else
-	        eep_save(&fan_speed_min);
-        	eep_save(&fan_speed_max);        
-        #endif
+#ifdef CURRENT_SENSE_MOD
+	eep_save(&fan_current_min);
+	eep_save(&fan_current_max);
+#else
+	eep_save(&fan_speed_min);
+	eep_save(&fan_speed_max);
+#endif
 }
 
 void set_dot(void)
@@ -636,9 +637,9 @@ void display_char(uint8_t digit, uint8_t character)
 	case '.':
 		PORTD = (uint8_t) (~0x10);	// '.'
 		break;
-        case 'C':
-                PORTD = (uint8_t) (~0x0F);      // 'C'
-                break;
+	case 'C':
+		PORTD = (uint8_t) (~0x0F);	// 'C'
+		break;
 	case 'F':
 		PORTD = (uint8_t) (~0x4B);	// 'F'
 		break;
@@ -730,12 +731,12 @@ void fan_test(void)
 		delay(3000);
 		fan_current = analogRead(A2);
 
-                /*
-		while(1) {
-		        fan_current = analogRead(A2);
-                        display_number(fan_current);  
-                }
-                */
+		/*
+		   while(1) {
+		   fan_current = analogRead(A2);
+		   display_number(fan_current);  
+		   }
+		 */
 
 		if ((fan_current < (uint16_t) (fan_current_min.value)) || (fan_current > (uint16_t) (fan_current_max.value))) {
 			// the fan is not working as it should
