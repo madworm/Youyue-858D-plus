@@ -1,0 +1,15 @@
+
+Simple version:
+===============
+
+1) Cut a GND trace on the bottom of the board (see images).
+2) Place a 1 Ohm resistor (0805 / 1206) across the gap.
+3) Connect the high-side of that resistor to PC2 via a 10k resistor.
+4) Enable the mod in the .h file.
+
+
+Commutation detection:
+======================
+
+TODO
+

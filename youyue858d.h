@@ -1,6 +1,22 @@
 #ifndef youyoue858d_h
 #define youyoue858d_h
 
+/*
+ * See the Docs folder for how to add a 1 Ohm current sense
+ * resistor to meaure the fan-current.
+ *
+ * Some time in the future, this may be used to check for
+ * true fan-speed via the commutation signal.
+ *
+ * This only requires an opamp (used as comparator) +
+ * a few resistors / caps.
+ *
+ * http://dangerousprototypes.com/2014/03/01/app-note-fan-health-monitoring-and-the-mic502/
+ * http://www.micrel.com/_PDF/App-Notes/an-34.pdf
+ *
+ */
+//#define CURRENT_SENSE_MOD
+
 typedef struct CPARAM {
 	int16_t value_min;
 	int16_t value_max;
@@ -95,6 +111,9 @@ typedef struct CPARAM {
 
 #define FAN_SPEED_MIN_DEFAULT 150UL
 #define FAN_SPEED_MAX_DEFAULT 315UL
+
+#define FAN_CURRENT_MIN_DEFAULT 30UL
+#define FAN_CURRENT_MAX_DEFAULT 71UL
 
 #define SLP_TIMEOUT_DEFAULT 10
 
