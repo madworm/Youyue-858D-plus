@@ -149,7 +149,6 @@ void loop(void)
 	//int32_t start_time = micros();      
 
 	static int16_t temp_inst = 0;
-	static int16_t temp_inst_previous = 0;
 	static int32_t temp_accu = 0;
 	static int16_t temp_average = 0;
 	static int16_t temp_average_previous = 0;
@@ -170,7 +169,6 @@ void loop(void)
 
 	static uint32_t heater_start_time = 0;
 
-	temp_inst_previous = temp_inst;
 	temp_inst = analogRead(A0) + temp_offset_corr.value;	// approx. temp in °C
 
 	if (temp_inst < 0) {
