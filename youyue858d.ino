@@ -178,7 +178,6 @@ void loop(void)
 	if (REEDSW_OPEN && (temp_setpoint.value >= temp_setpoint.value_min)
 	    && (temp_average < MAX_TEMP_ERR) && ((millis() - heater_start_time) < ((uint32_t) (slp_timeout.value) * 60 * 1000))) {
 
-		// !! DANGER !!
 		FAN_ON;
 
 		error = temp_setpoint.value - temp_average;
