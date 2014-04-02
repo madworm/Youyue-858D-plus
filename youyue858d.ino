@@ -7,7 +7,7 @@
  *
  * Other identifiers (see images)
  *
- * V1.20
+ * V1.30
  *
  * 2014 - Robert Spitzenpfeil
  *
@@ -30,7 +30,7 @@
  */
 
 #define FW_MAJOR_V 1
-#define FW_MINOR_V_A 2
+#define FW_MINOR_V_A 3
 #define FW_MINOR_V_B 0
 
 /*
@@ -60,6 +60,10 @@
  *
  */
 
+#include <avr/io.h>
+#include <avr/wdt.h>
+#include <avr/interrupt.h>
+#include <stdint.h>
 #include <EEPROM.h>
 #include "youyue858d.h"
 
@@ -71,7 +75,7 @@ CPARAM d_gain = { 0, 999, D_GAIN_DEFAULT, D_GAIN_DEFAULT, 6, 7 };
 CPARAM i_thresh = { 0, 100, I_THRESH_DEFAULT, I_THRESH_DEFAULT, 8, 9 };
 CPARAM temp_offset_corr = { -100, 100, TEMP_OFFSET_CORR_DEFAULT, TEMP_OFFSET_CORR_DEFAULT, 10, 11 };
 CPARAM temp_setpoint = { 50, 500, TEMP_SETPOINT_DEFAULT, TEMP_SETPOINT_DEFAULT, 12, 13 };
-CPARAM temp_averages = { 1, 999, TEMP_AVERAGES_DEFAULT, TEMP_AVERAGES_DEFAULT, 14, 15 };
+CPARAM temp_averages = { 100, 999, TEMP_AVERAGES_DEFAULT, TEMP_AVERAGES_DEFAULT, 14, 15 };
 CPARAM slp_timeout = { 0, 30, SLP_TIMEOUT_DEFAULT, SLP_TIMEOUT_DEFAULT, 16, 17 };
 
 #ifdef CURRENT_SENSE_MOD
@@ -82,7 +86,278 @@ CPARAM fan_speed_min = { 120, 180, FAN_SPEED_MIN_DEFAULT, FAN_SPEED_MIN_DEFAULT,
 CPARAM fan_speed_max = { 300, 400, FAN_SPEED_MAX_DEFAULT, FAN_SPEED_MAX_DEFAULT, 20, 21 };
 #endif
 
-void setup(void)
+void watchdog_off_early(void)
+{
+#ifdef USE_WATCHDOG
+	wdt_reset();
+	_mcusr = MCUSR;
+	MCUSR &= ~_BV(WDRF);	// clear WDRF, as it overrides WDE-bit in WDTCSR-reg and leads to endless reset-loop (15ms timeout after wd-reset)
+	wdt_disable();
+#endif
+}
+
+int main(void)
+{
+	init();			// make sure the Arduino-specific stuff is up and running (timers... see 'wiring.c')
+
+	setup_858D();
+
+#ifdef USE_WATCHDOG
+	if (_mcusr & _BV(WDRF)) {
+		// there was a watchdog reset - should never ever happen
+		HEATER_OFF;
+		FAN_ON;
+		while (1) {
+			display_string("RST");
+			delay(1000);
+			clear_display();
+			delay(1000);
+		}
+	}
+#endif
+
+	show_firmware_version();
+	fan_test();
+	watchdog_on();
+
+#ifdef DEBUG
+	Serial.begin(2400);
+	Serial.println("\nRESET");
+#endif
+
+	while (1) {
+#ifdef DEBUG
+		int32_t start_time = micros();
+#endif
+		static int16_t temp_inst = 0;
+		static int32_t temp_accu = 0;
+		static int16_t temp_average = 0;
+		static int16_t temp_average_previous = 0;
+
+		static int32_t button_input_time = 0;
+
+		static int16_t heater_ctr = 0;
+		static int16_t heater_duty_cycle = 0;
+		static int16_t error = 0;
+		static int32_t error_accu = 0;
+		static int16_t velocity = 0;
+		static float PID_drive = 0;
+
+		static int16_t button_counter = 0;
+
+		static uint8_t temp_setpoint_saved = 1;
+		static int32_t temp_setpoint_saved_time = 0;
+
+		static uint32_t heater_start_time = 0;
+
+		temp_inst = analogRead(A0) + temp_offset_corr.value;	// approx. temp in °C
+
+		if (temp_inst < 0) {
+			temp_inst = 0;
+		}
+
+		if (REEDSW_OPEN && (temp_setpoint.value >= temp_setpoint.value_min)
+		    && (temp_average < MAX_TEMP_ERR) && ((millis() - heater_start_time) < ((uint32_t) (slp_timeout.value) * 60 * 1000))) {
+
+			FAN_ON;
+
+			error = temp_setpoint.value - temp_average;
+			velocity = temp_average_previous - temp_average;
+
+			if (abs(error) < i_thresh.value) {
+				// if close enough to target temperature use PID control
+				error_accu += error;
+			} else {
+				// otherwise only use PD control (avoids issues with error_accu growing too large
+				error_accu = 0;
+			}
+
+			PID_drive =
+			    error * (p_gain.value / P_GAIN_SCALING) + error_accu * (i_gain.value / I_GAIN_SCALING) +
+			    velocity * (d_gain.value / D_GAIN_SCALING);
+
+			heater_duty_cycle = (int16_t) (PID_drive);
+
+			if (heater_duty_cycle > HEATER_DUTY_CYCLE_MAX) {
+				heater_duty_cycle = HEATER_DUTY_CYCLE_MAX;
+			}
+
+			if (heater_duty_cycle < 0) {
+				heater_duty_cycle = 0;
+			}
+
+			if (heater_ctr < heater_duty_cycle) {
+				set_dot();
+				HEATER_ON;
+			} else {
+				HEATER_OFF;
+				clear_dot();
+			}
+
+			heater_ctr++;
+			if (heater_ctr == PWM_CYCLES) {
+				heater_ctr = 0;
+			}
+
+		} else if (REEDSW_CLOSED) {
+			HEATER_OFF;
+			heater_start_time = millis();
+			clear_dot();
+		} else {
+			HEATER_OFF;
+			clear_dot();
+		}
+
+		static uint16_t temp_avg_ctr = 0;
+
+		temp_accu += temp_inst;
+		temp_avg_ctr++;
+
+		if (temp_avg_ctr == (uint16_t) (temp_averages.value)) {
+			temp_average_previous = temp_average;
+			temp_average = temp_accu / temp_averages.value;
+			temp_accu = 0;
+			temp_avg_ctr = 0;
+		}
+
+		if (temp_average >= FAN_ON_TEMP) {
+			FAN_ON;
+		} else if (REEDSW_CLOSED && (temp_average <= FAN_OFF_TEMP)) {
+			FAN_OFF;
+		} else if (REEDSW_OPEN) {
+			FAN_ON;
+		}
+
+		if (SW0_PRESSED && SW1_PRESSED) {
+			HEATER_OFF;
+			watchdog_off();
+			change_config_parameter(&p_gain, "P");
+			change_config_parameter(&i_gain, "I");
+			change_config_parameter(&d_gain, "D");
+			change_config_parameter(&i_thresh, "ITH");
+			change_config_parameter(&temp_offset_corr, "TOF");
+			change_config_parameter(&temp_averages, "AVG");
+			change_config_parameter(&slp_timeout, "SLP");
+#ifdef CURRENT_SENSE_MOD
+			change_config_parameter(&fan_current_min, "FCL");
+			change_config_parameter(&fan_current_max, "FCH");
+#else
+			change_config_parameter(&fan_speed_min, "FSL");
+			change_config_parameter(&fan_speed_max, "FSH");
+#endif
+			watchdog_on();
+		} else if (SW0_PRESSED) {
+			button_input_time = millis();
+			button_counter++;
+
+			if (button_counter == 200) {
+
+				if (temp_setpoint.value < temp_setpoint.value_max) {
+					temp_setpoint.value++;
+					temp_setpoint_saved = 0;
+				}
+
+			}
+
+			if (button_counter == 600) {
+
+				if (temp_setpoint.value < (temp_setpoint.value_max - 10)) {
+					temp_setpoint.value += 10;
+					temp_setpoint_saved = 0;
+				}
+
+				button_counter = 201;
+
+			}
+
+		} else if (SW1_PRESSED) {
+			button_input_time = millis();
+			button_counter++;
+
+			if (button_counter == 200) {
+
+				if (temp_setpoint.value > temp_setpoint.value_min) {
+					temp_setpoint.value--;
+					temp_setpoint_saved = 0;
+				}
+
+			}
+
+			if (button_counter == 600) {
+
+				if (temp_setpoint.value > (temp_setpoint.value_min + 10)) {
+					temp_setpoint.value -= 10;
+					temp_setpoint_saved = 0;
+				}
+
+				button_counter = 201;
+
+			}
+
+		} else {
+			button_counter = 0;
+		}
+
+		if ((millis() - button_input_time) < SHOW_SETPOINT_TIMEOUT) {
+			display_number(temp_setpoint.value);	// show temperature setpoint
+		} else {
+			if (temp_setpoint_saved == 0) {
+				set_eeprom_saved_dot();
+				eep_save(&temp_setpoint);
+				temp_setpoint_saved_time = millis();
+				temp_setpoint_saved = 1;
+			} else if (temp_average <= SAFE_TO_TOUCH_TEMP) {
+				display_string("---");
+			} else if (temp_average >= MAX_TEMP_ERR) {
+				// something might have gone terribly wrong
+				HEATER_OFF;
+				FAN_ON;
+				watchdog_off();
+				while (1) {
+					// stay here until the power is cycled
+					// make sure the user notices the error by blinking "FAN"
+					// and don't resume operation if the error goes away on its own
+					//
+					// possible reasons to be here:
+					//
+					// * wand is not connected (false temperature reading)
+					// * thermo couple has failed
+					// * true over-temperature condition
+					//
+					display_string("FAN");
+					delay(1000);
+					clear_display();
+					delay(1000);
+				}
+			} else if (abs((int16_t) (temp_average) - (int16_t) (temp_setpoint.value)) < TEMP_REACHED_MARGIN) {
+				display_number(temp_setpoint.value);	// avoid showing insignificant fluctuations on the display (annoying)
+			} else {
+				display_number(temp_average);
+				//display_number(temp_inst);
+			}
+		}
+
+		if ((millis() - temp_setpoint_saved_time) > 500) {
+			clear_eeprom_saved_dot();
+		}
+#if defined(WATCHDOG_TEST) && defined(USE_WATCHDOG)
+		// watchdog test
+		if (temp_average > 100) {
+			delay(150);
+		}
+#endif
+
+		wdt_reset();
+
+#ifdef DEBUG
+		int32_t stop_time = micros();
+		Serial.println(stop_time - start_time);
+#endif
+	}
+
+}
+
+void setup_858D(void)
 {
 	HEATER_OFF;
 	DDRB |= _BV(PB1);	// set as output for TRIAC control
@@ -102,6 +377,8 @@ void setup(void)
 #ifdef CURRENT_SENSE_MOD
 	DDRC &= ~_BV(PC2);	// set as input
 #endif
+
+	setup_timer1_ctc();	// needed for background display refresh
 
 	analogReference(EXTERNAL);	// use external 2.5V as ADC reference voltage (VCC / 2)
 
@@ -132,232 +409,6 @@ void setup(void)
 	eep_load(&fan_speed_min);
 	eep_load(&fan_speed_max);
 #endif
-
-	//Serial.begin(9600);
-
-	//segm_test();
-	//char_test();
-
-	setup_timer1_ctc();	// needed for background display refresh
-	show_firmware_version();
-
-	fan_test();
-}
-
-void loop(void)
-{
-	//int32_t start_time = micros();      
-
-	static int16_t temp_inst = 0;
-	static int32_t temp_accu = 0;
-	static int16_t temp_average = 0;
-	static int16_t temp_average_previous = 0;
-
-	static int32_t button_input_time = 0;
-
-	static int16_t heater_ctr = 0;
-	static int16_t heater_duty_cycle = 0;
-	static int16_t error = 0;
-	static int32_t error_accu = 0;
-	static int16_t velocity = 0;
-	static float PID_drive = 0;
-
-	static int16_t button_counter = 0;
-
-	static uint8_t temp_setpoint_saved = 1;
-	static int32_t temp_setpoint_saved_time = 0;
-
-	static uint32_t heater_start_time = 0;
-
-	temp_inst = analogRead(A0) + temp_offset_corr.value;	// approx. temp in °C
-
-	if (temp_inst < 0) {
-		temp_inst = 0;
-	}
-
-	if (REEDSW_OPEN && (temp_setpoint.value >= temp_setpoint.value_min)
-	    && (temp_average < MAX_TEMP_ERR) && ((millis() - heater_start_time) < ((uint32_t) (slp_timeout.value) * 60 * 1000))) {
-
-		FAN_ON;
-
-		error = temp_setpoint.value - temp_average;
-		velocity = temp_average_previous - temp_average;
-
-		if (abs(error) < i_thresh.value) {
-			// if close enough to target temperature use PID control
-			error_accu += error;
-		} else {
-			// otherwise only use PD control (avoids issues with error_accu growing too large
-			error_accu = 0;
-		}
-
-		PID_drive =
-		    error * (p_gain.value / P_GAIN_SCALING) + error_accu * (i_gain.value / I_GAIN_SCALING) +
-		    velocity * (d_gain.value / D_GAIN_SCALING);
-
-		heater_duty_cycle = (int16_t) (PID_drive);
-
-		if (heater_duty_cycle > HEATER_DUTY_CYCLE_MAX) {
-			heater_duty_cycle = HEATER_DUTY_CYCLE_MAX;
-		}
-
-		if (heater_duty_cycle < 0) {
-			heater_duty_cycle = 0;
-		}
-
-		if (heater_ctr < heater_duty_cycle) {
-			set_dot();
-			HEATER_ON;
-		} else {
-			HEATER_OFF;
-			clear_dot();
-		}
-
-		heater_ctr++;
-		if (heater_ctr == PWM_CYCLES) {
-			heater_ctr = 0;
-		}
-
-	} else if (REEDSW_CLOSED) {
-		HEATER_OFF;
-		heater_start_time = millis();
-		clear_dot();
-	} else {
-		HEATER_OFF;
-		clear_dot();
-	}
-
-	static uint16_t temp_avg_ctr = 0;
-
-	temp_accu += temp_inst;
-	temp_avg_ctr++;
-
-	if (temp_avg_ctr == (uint16_t) (temp_averages.value)) {
-		temp_average_previous = temp_average;
-		temp_average = temp_accu / temp_averages.value;
-		temp_accu = 0;
-		temp_avg_ctr = 0;
-	}
-
-	if (temp_average >= FAN_ON_TEMP) {
-		FAN_ON;
-	} else if (REEDSW_CLOSED && (temp_average <= FAN_OFF_TEMP)) {
-		FAN_OFF;
-	} else if (REEDSW_OPEN) {
-		FAN_ON;
-	}
-
-	if (SW0_PRESSED && SW1_PRESSED) {
-		HEATER_OFF;
-		change_config_parameter(&p_gain, "P");
-		change_config_parameter(&i_gain, "I");
-		change_config_parameter(&d_gain, "D");
-		change_config_parameter(&i_thresh, "ITH");
-		change_config_parameter(&temp_offset_corr, "TOF");
-		change_config_parameter(&temp_averages, "AVG");
-		change_config_parameter(&slp_timeout, "SLP");
-#ifdef CURRENT_SENSE_MOD
-		change_config_parameter(&fan_current_min, "FCL");
-		change_config_parameter(&fan_current_max, "FCH");
-#else
-		change_config_parameter(&fan_speed_min, "FSL");
-		change_config_parameter(&fan_speed_max, "FSH");
-#endif
-	} else if (SW0_PRESSED) {
-		button_input_time = millis();
-		button_counter++;
-
-		if (button_counter == 200) {
-
-			if (temp_setpoint.value < temp_setpoint.value_max) {
-				temp_setpoint.value++;
-				temp_setpoint_saved = 0;
-			}
-
-		}
-
-		if (button_counter == 600) {
-
-			if (temp_setpoint.value < (temp_setpoint.value_max - 10)) {
-				temp_setpoint.value += 10;
-				temp_setpoint_saved = 0;
-			}
-
-			button_counter = 201;
-
-		}
-
-	} else if (SW1_PRESSED) {
-		button_input_time = millis();
-		button_counter++;
-
-		if (button_counter == 200) {
-
-			if (temp_setpoint.value > temp_setpoint.value_min) {
-				temp_setpoint.value--;
-				temp_setpoint_saved = 0;
-			}
-
-		}
-
-		if (button_counter == 600) {
-
-			if (temp_setpoint.value > (temp_setpoint.value_min + 10)) {
-				temp_setpoint.value -= 10;
-				temp_setpoint_saved = 0;
-			}
-
-			button_counter = 201;
-
-		}
-
-	} else {
-		button_counter = 0;
-	}
-
-	if ((millis() - button_input_time) < SHOW_SETPOINT_TIMEOUT) {
-		display_number(temp_setpoint.value);	// show temperature setpoint
-	} else {
-		if (temp_setpoint_saved == 0) {
-			set_eeprom_saved_dot();
-			eep_save(&temp_setpoint);
-			temp_setpoint_saved_time = millis();
-			temp_setpoint_saved = 1;
-		} else if (temp_average <= SAFE_TO_TOUCH_TEMP) {
-			display_string("---");
-		} else if (temp_average >= MAX_TEMP_ERR) {
-			// something might have gone terribly wrong
-			HEATER_OFF;
-			FAN_ON;
-			while (1) {
-				// stay here until the power is cycled
-				// make sure the user notices the error by blinking "FAN"
-				// and don't resume operation if the error goes away on its own
-				//
-				// possible reasons to be here:
-				//
-				// * wand is not connected (false temperature reading)
-				// * thermo couple has failed
-				// * true over-temperature condition
-				//
-				display_string("FAN");
-				delay(1000);
-				clear_display();
-				delay(1000);
-			}
-		} else if (abs((int16_t) (temp_average) - (int16_t) (temp_setpoint.value)) < TEMP_REACHED_MARGIN) {
-			display_number(temp_setpoint.value);	// avoid showing insignificant fluctuations on the display (annoying)
-		} else {
-			display_number(temp_average);
-			//display_number(temp_inst);
-		}
-	}
-
-	if ((millis() - temp_setpoint_saved_time) > 500) {
-		clear_eeprom_saved_dot();
-	}
-	// int32_t stop_time = micros();
-	//Serial.println(stop_time - start_time);
 }
 
 void clear_display(void)
@@ -661,6 +712,9 @@ void display_char(uint8_t digit, uint8_t character)
 	case 'H':
 		PORTD = (uint8_t) (~0x6A);	// 'h'
 		break;
+	case 'R':
+		PORTD = (uint8_t) (~0x42);	// 'r'
+		break;
 	case 'S':
 		PORTD = (uint8_t) (~0x6D);	// 'S'
 		break;
@@ -870,4 +924,22 @@ ISR(TIMER1_COMPA_vect)
 	if (digit == 6) {
 		digit = 0;
 	}
+}
+
+void watchdog_off(void)
+{
+#ifdef USE_WATCHDOG
+	wdt_reset();
+	MCUSR &= ~_BV(WDRF);	// clear WDRF, as it overrides WDE-bit in WDTCSR-reg and leads to endless reset-loop (15ms timeout after wd-reset)
+	wdt_disable();
+#endif
+}
+
+void watchdog_on(void)
+{
+#ifdef USE_WATCHDOG
+	wdt_reset();
+	MCUSR &= ~_BV(WDRF);	// clear WDRF, as it overrides WDE-bit in WDTCSR-reg and leads to endless reset-loop (15ms timeout after wd-reset)
+	wdt_enable(WDTO_120MS);
+#endif
 }

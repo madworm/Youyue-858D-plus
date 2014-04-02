@@ -15,7 +15,13 @@
  * http://www.micrel.com/_PDF/App-Notes/an-34.pdf
  *
  */
+
+//#define DEBUG
+
 //#define CURRENT_SENSE_MOD
+
+#define USE_WATCHDOG
+//#define WATCHDOG_TEST
 
 typedef struct CPARAM {
 	int16_t value_min;
@@ -25,6 +31,31 @@ typedef struct CPARAM {
 	uint8_t eep_addr_high;
 	uint8_t eep_addr_low;
 } CPARAM;
+
+uint8_t _mcusr __attribute__ ((section(".noinit")));
+
+void change_config_parameter(CPARAM * param, const char *string);
+void char_test(void);
+void clear_display(void);
+void clear_dot(void);
+void clear_eeprom_saved_dot(void);
+void display_char(uint8_t digit, uint8_t character);
+void display_number(int16_t number);
+void display_string(const char *string);
+void eep_load(CPARAM * param);
+void eep_save(CPARAM * param);
+void fan_test(void);
+int main(void);
+void restore_default_conf(void);
+void segm_test(void);
+void set_dot(void);
+void set_eeprom_saved_dot(void);
+void setup_858D(void);
+void setup_timer1_ctc(void);
+void show_firmware_version(void);
+void watchdog_off_early(void) __attribute__ ((naked)) __attribute__ ((section(".init1")));
+void watchdog_off(void);
+void watchdog_on(void);
 
 #if ( defined(__AVR_ATmega328P__) || defined(__AVR_ATmega328__) )
 #define PB0 0

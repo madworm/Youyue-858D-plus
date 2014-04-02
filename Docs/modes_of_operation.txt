@@ -102,4 +102,11 @@ Error behaviour:
   (This does not necessarily detect a stalled fan, as the feedback is just the
    drive voltage, not an actual tacho signal!)
 
+* If the WATCHDOG is used (by default) and the device becomes unresponsive for more
+  than about 120ms AND the heater is ON, a watchdog-reset is triggered.
+
+  THIS SHOULD NEVER HAPPEN.
+
+  The device will turn off the heater and turn on the fan. The display will blink
+  the error code "rSt" until power is cycled.
 
