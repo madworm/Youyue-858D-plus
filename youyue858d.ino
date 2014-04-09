@@ -86,16 +86,6 @@ CPARAM fan_speed_min = { 120, 180, FAN_SPEED_MIN_DEFAULT, FAN_SPEED_MIN_DEFAULT,
 CPARAM fan_speed_max = { 300, 400, FAN_SPEED_MAX_DEFAULT, FAN_SPEED_MAX_DEFAULT, 20, 21 };
 #endif
 
-void watchdog_off_early(void)
-{
-#ifdef USE_WATCHDOG
-	wdt_reset();
-	_mcusr = MCUSR;
-	MCUSR &= ~_BV(WDRF);	// clear WDRF, as it overrides WDE-bit in WDTCSR-reg and leads to endless reset-loop (15ms timeout after wd-reset)
-	wdt_disable();
-#endif
-}
-
 int main(void)
 {
 	init();			// make sure the Arduino-specific stuff is up and running (timers... see 'wiring.c')
@@ -118,7 +108,9 @@ int main(void)
 
 	show_firmware_version();
 	fan_test();
+#ifdef USE_WATCHDOG
 	watchdog_on();
+#endif
 
 #ifdef DEBUG
 	Serial.begin(2400);
@@ -230,7 +222,9 @@ int main(void)
 
 		if (SW0_PRESSED && SW1_PRESSED) {
 			HEATER_OFF;
+#ifdef USE_WATCHDOG
 			watchdog_off();
+#endif
 			change_config_parameter(&p_gain, "P");
 			change_config_parameter(&i_gain, "I");
 			change_config_parameter(&d_gain, "D");
@@ -245,7 +239,9 @@ int main(void)
 			change_config_parameter(&fan_speed_min, "FSL");
 			change_config_parameter(&fan_speed_max, "FSH");
 #endif
+#ifdef USE_WATCHDOG
 			watchdog_on();
+#endif
 		} else if (SW0_PRESSED) {
 			button_input_time = millis();
 			button_counter++;
@@ -312,7 +308,9 @@ int main(void)
 				// something might have gone terribly wrong
 				HEATER_OFF;
 				FAN_ON;
+#ifdef USE_WATCHDOG
 				watchdog_off();
+#endif
 				while (1) {
 					// stay here until the power is cycled
 					// make sure the user notices the error by blinking "FAN"
@@ -347,7 +345,9 @@ int main(void)
 		}
 #endif
 
+#ifdef USE_WATCHDOG
 		wdt_reset();
+#endif
 
 #ifdef DEBUG
 		int32_t stop_time = micros();
@@ -926,20 +926,26 @@ ISR(TIMER1_COMPA_vect)
 	}
 }
 
+#ifdef USE_WATCHDOG
 void watchdog_off(void)
 {
-#ifdef USE_WATCHDOG
 	wdt_reset();
 	MCUSR &= ~_BV(WDRF);	// clear WDRF, as it overrides WDE-bit in WDTCSR-reg and leads to endless reset-loop (15ms timeout after wd-reset)
 	wdt_disable();
-#endif
 }
 
 void watchdog_on(void)
 {
-#ifdef USE_WATCHDOG
 	wdt_reset();
 	MCUSR &= ~_BV(WDRF);	// clear WDRF, as it overrides WDE-bit in WDTCSR-reg and leads to endless reset-loop (15ms timeout after wd-reset)
 	wdt_enable(WDTO_120MS);
-#endif
 }
+
+void watchdog_off_early(void)
+{
+	wdt_reset();
+	_mcusr = MCUSR;
+	MCUSR &= ~_BV(WDRF);	// clear WDRF, as it overrides WDE-bit in WDTCSR-reg and leads to endless reset-loop (15ms timeout after wd-reset)
+	wdt_disable();
+}
+#endif

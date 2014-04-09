@@ -32,8 +32,6 @@ typedef struct CPARAM {
 	uint8_t eep_addr_low;
 } CPARAM;
 
-uint8_t _mcusr __attribute__ ((section(".noinit")));
-
 void change_config_parameter(CPARAM * param, const char *string);
 void char_test(void);
 void clear_display(void);
@@ -53,9 +51,12 @@ void set_eeprom_saved_dot(void);
 void setup_858D(void);
 void setup_timer1_ctc(void);
 void show_firmware_version(void);
+#ifdef USE_WATCHDOG
+uint8_t _mcusr __attribute__ ((section(".noinit")));
 void watchdog_off_early(void) __attribute__ ((naked)) __attribute__ ((section(".init1")));
 void watchdog_off(void);
 void watchdog_on(void);
+#endif
 
 #if ( defined(__AVR_ATmega328P__) || defined(__AVR_ATmega328__) )
 #define PB0 0
