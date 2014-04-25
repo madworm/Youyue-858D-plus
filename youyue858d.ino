@@ -29,6 +29,16 @@
  *
  */
 
+/* 
+ *
+ * DO NOT USE A BOOTLOADER WITH THE WATCHDOG TIMER
+ *
+ * ISP CODE UPLOAD ONLY
+ * 
+ * Change options in the .h file
+ *
+ */
+
 #define FW_MAJOR_V 1
 #define FW_MINOR_V_A 3
 #define FW_MINOR_V_B 2
