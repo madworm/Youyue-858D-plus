@@ -7,7 +7,7 @@
  *
  * Other identifiers (see images)
  *
- * V1.30
+ * V1.31
  *
  * 2014 - Robert Spitzenpfeil
  *
@@ -31,7 +31,7 @@
 
 #define FW_MAJOR_V 1
 #define FW_MINOR_V_A 3
-#define FW_MINOR_V_B 0
+#define FW_MINOR_V_B 1
 
 /*
  * PC5: FAN-speed (A5 in Arduino lingo) (OK)
@@ -888,9 +888,9 @@ void setup_timer1_ctc(void)
 	uint8_t _sreg = SREG;	/* save SREG */
 	cli();			/* disable all interrupts while messing with the register setup */
 
-	/* set prescaler to 8 */
-	TCCR1B |= (_BV(CS11));
-	TCCR1B &= ~(_BV(CS11) | _BV(CS12));
+	/* set prescaler to 64 */
+	TCCR1B |= (_BV(CS11) | _BV(CS10));
+	TCCR1B &= ~(_BV(CS12));
 
 	/* set WGM mode 4: CTC using OCR1A */
 	TCCR1A &= ~(_BV(WGM10) | _BV(WGM11));
