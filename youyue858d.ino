@@ -7,7 +7,7 @@
  *
  * Other identifiers (see images)
  *
- * V1.31
+ * V1.32
  *
  * 2014 - Robert Spitzenpfeil
  *
@@ -31,7 +31,7 @@
 
 #define FW_MAJOR_V 1
 #define FW_MINOR_V_A 3
-#define FW_MINOR_V_B 1
+#define FW_MINOR_V_B 2
 
 /*
  * PC5: FAN-speed (A5 in Arduino lingo) (OK)
@@ -594,23 +594,11 @@ void display_number(int16_t number)
 		framebuffer[5] = 255;
 	}
 
-	uint16_t temp1 = 0;
-	uint16_t temp2 = 0;
-
-	uint8_t dig0 = 0;
-	uint8_t dig1 = 0;
-	uint8_t dig2 = 0;
-
-	temp1 = number - (number / 100) * 100;
-	temp2 = temp1 - (temp1 / 10) * 10;
-
-	dig0 = (uint8_t) (temp2);
-	dig1 = (uint8_t) ((temp1 - temp2) / 10);
-	dig2 = (uint8_t) ((number - temp1) / 100);
-
-	framebuffer[0] = dig0;
-	framebuffer[1] = dig1;
-	framebuffer[2] = dig2;
+	framebuffer[0] = (uint8_t) (number % 10);
+	number /= 10;
+	framebuffer[1] = (uint8_t) (number % 10);
+	number /= 10;
+	framebuffer[2] = (uint8_t) (number % 10);
 }
 
 void display_char(uint8_t digit, uint8_t character)
