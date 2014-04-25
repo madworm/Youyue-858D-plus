@@ -889,7 +889,7 @@ void setup_timer1_ctc(void)
 	TCCR1A &= ~(_BV(COM1A1) | _BV(COM1A0) | _BV(COM1B1) | _BV(COM1B0));
 
 	/* set top value for TCNT1 */
-	OCR1A = 8192;
+	OCR1A = 256;		// display refresh about 80Hz
 
 	/* enable COMPA isr */
 	TIMSK1 |= _BV(OCIE1A);
