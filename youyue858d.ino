@@ -23,7 +23,7 @@
  * If you compile and upload using the Arduino-IDE + ISP, choose one of these target boards:
  *
  * LilyPad Arduino w/ ATmega168 (TESTED - WORKS)
- * LilyPad Arduino w/ ATmega328 (UNTESTED)
+ * LilyPad Arduino w/ ATmega328 (TESTED - WORKS)
  *
  * This will make sure suitable FUSE settings are used (8MHz RC-oscillator...)
  *
