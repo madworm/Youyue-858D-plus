@@ -51,9 +51,9 @@
  * #21: AREF <--- about 2.5V as analog reference for ADC
  * PB1: opto-triac driver !! THIS IS DANGEROUS TO USE !! (OK)
  *
- * PB0: 7-seg digit 0 (OK)
- * PB7: 7-seg digit 1 (OK)
- * PB6: 7-seg digit 2 (OK)
+ * PB0: 7-seg digit 0 [common Anode] (OK) 
+ * PB7: 7-seg digit 1 [common Anode] (OK)
+ * PB6: 7-seg digit 2 [common Anode] (OK)
  *
  * PD0: 7-seg top (OK)
  * PD1: 7-seg bottom left (OK)
