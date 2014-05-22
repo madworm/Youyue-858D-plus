@@ -2,24 +2,33 @@
  * This is a custom firmware for my 'Youyue 858D+' hot-air sodlering station.
  * It may or may not be useful to you, always double check if you use it.
  *
- * PCB version: 858D V4.1
- * Date code:   20130421
- *
- * Other identifiers (see images)
- *
  * V1.32
  *
  * 2014 - Robert Spitzenpfeil
  *
  * Licence: GNU GPL v2
  *
+ *
+ * Developed for / tested on:
+ * --------------------------
+ *
+ * PCB version: 858D V4.1
+ * Date code:   20130421
+ *
+ * 
+ * Also known to work on:
+ * ----------------------
+ *
+ * PCB version: 858D V4.3
+ * Date code:   20130529
+ * HW mods:     not tested!
+ *
  */
 
 /*
  *  Make sure to read and understand '/Docs/modes_of_operation.txt'
- */
-
-/*
+ *
+ *
  * If you compile and upload using the Arduino-IDE + ISP, choose one of these target boards:
  *
  * LilyPad Arduino w/ ATmega168 (TESTED - WORKS)
@@ -27,9 +36,6 @@
  *
  * This will make sure suitable FUSE settings are used (8MHz RC-oscillator...)
  *
- */
-
-/* 
  *
  * DO NOT USE A BOOTLOADER WITH THE WATCHDOG TIMER
  *
