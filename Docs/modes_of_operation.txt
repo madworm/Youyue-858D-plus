@@ -14,20 +14,20 @@ Fan controls:
 
 * The fan-speed is set with the potentiometer
 * If the fan-speed is erratic, you need a new potentiometer
-* If the wand is in the craddle and is cold (< 45°C), then fan is off
-* If the wand is in the craddle and is too hot (> 60°C), the fan is on
-* If the wand is out of the craddle, the fan is always on
+* If the wand is in the cradle and is cold (< 45°C), then fan is off
+* If the wand is in the cradle and is too hot (> 60°C), the fan is on
+* If the wand is out of the cradle, the fan is always on
 
 
 Temperature control:
 ====================
 
 * The base unit usually shows the current temperature (averaged)
-* It shows the setpoint, if the temperature is within +- 3°C
+* It shows the set-point, if the temperature is within +- 3°C
 * Temperature can be changed with the up/down buttons
 * Short button press: +- 1°C
 * Long button press:  +- 10°C
-* The setpoint is stored in eeprom
+* The set-point is stored in eeprom
 * Temperature range: 50...500 °C
 
 
@@ -51,7 +51,7 @@ tof)  temp_offset_corr -100...100
   (see youyue858d.h)
 
 i_threshold: temperature range (+-) that determines the switch between PD and PID
-             if the temperature is far away from the setpoint, PD-control is used
+             if the temperature is far away from the set-point, PD-control is used
              if the temperature is within range, PID-control is used to stabilize
 
 temp_offset_corr: can be used to correct a temperature difference between the display
@@ -76,7 +76,7 @@ Sleep timeout:
 
 SLP)     slp_timeout  0...30 (default: 5)
 
-If the wand is not placed into the craddle for longer than slp_timeout, the heater
+If the wand is not placed into the cradle for longer than slp_timeout, the heater
 is switched off, but the fan keeps running indefinitely.
 
 
@@ -87,7 +87,7 @@ Error behaviour:
   is above MAX_TEMP_ERR (550°C), the device will go into a "safe mode".
   
   The heater will be turned off permanently, the fan will be turned on 
-  to allow fast cooldown and the display will blink "FAN" until power is cycled.
+  to allow fast cool-down and the display will blink "FAN" until power is cycled.
 
 * If the device is powered up and the wand is not in the cradle, an error message
   will be displayed. Put the wand into the cradle and cycle power for normal

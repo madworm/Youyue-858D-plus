@@ -1,12 +1,12 @@
 /*
- * This is a custom firmware for my 'Youyue 858D+' hot-air sodlering station.
+ * This is a custom firmware for my 'Youyue 858D+' hot-air soldering station.
  * It may or may not be useful to you, always double check if you use it.
  *
  * V1.32
  *
  * 2014 - Robert Spitzenpfeil
  *
- * Licence: GNU GPL v2
+ * License: GNU GPL v2
  *
  *
  * Developed for / tested on:
@@ -72,7 +72,7 @@
  *
  * PB5: SW1 (button1) (OK)
  * PB2: SW2 (button2) (OK)
- * PB4: reed switch (wand craddle sensor) (OK)
+ * PB4: reed switch (wand cradle sensor) (OK)
  *
  */
 
