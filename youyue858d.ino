@@ -16,12 +16,16 @@
  * Date code:   20130421
  *
  * 
- * Also known to work on:
- * ----------------------
+ * Reported to work with (I did not test these myself):
+ * ----------------------------------------------------
  *
  * PCB version: 858D V4.3
  * Date code:   20130529
  * HW mods:     not tested!
+ *
+ * PCB version: 858D V4.10
+ * Date code:	20140112
+ * HW mods:	not tested!
  *
  */
 
