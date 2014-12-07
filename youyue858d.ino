@@ -2,7 +2,7 @@
  * This is a custom firmware for my 'Youyue 858D+' hot-air soldering station.
  * It may or may not be useful to you, always double check if you use it.
  *
- * V1.32
+ * V1.33
  *
  * 2014 - Robert Spitzenpfeil
  *
@@ -51,7 +51,7 @@
 
 #define FW_MAJOR_V 1
 #define FW_MINOR_V_A 3
-#define FW_MINOR_V_B 2
+#define FW_MINOR_V_B 3
 
 /*
  * PC5: FAN-speed (A5 in Arduino lingo) (OK)
@@ -111,6 +111,17 @@ int main(void)
 	init();			// make sure the Arduino-specific stuff is up and running (timers... see 'wiring.c')
 
 	setup_858D();
+
+#ifdef DISPLAY_MCUSR
+	HEATER_OFF;
+	FAN_ON;
+	display_number(_mcusr);
+	MCUSR = 0;
+	//
+	// ATmega168 MCUSR (MSB to LSB): x-x-x-x-WDRF-BORF-EXTRF-PORF
+	//
+	delay(1000);
+#endif
 
 #ifdef USE_WATCHDOG
 	if (_mcusr & _BV(WDRF)) {
