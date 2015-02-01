@@ -19,9 +19,19 @@
  * Reported to work with (I did not test these myself):
  * ----------------------------------------------------
  *
+ * Reported by:	"Aric"
+ * Date:	2015-02-01
+ * PCB version: 858D V6.0
+ * Date code:   20140415
+ * HW mods:	not tested!
+ *
+ * ---
+ *
  * PCB version: 858D V4.3
  * Date code:   20130529
  * HW mods:     not tested!
+ *
+ * ---
  *
  * PCB version: 858D V4.10
  * Date code:	20140112
