@@ -756,6 +756,9 @@ void display_char(uint8_t digit, uint8_t character)
 	case 'G':
 		PORTD = (uint8_t) (~0x6F);	// 'G'
 		break;
+	case 'E':
+		PORTD = (uint8_t) (~0x4F);	// 'E'
+		break;
 	case 255:
 		PORTD = (uint8_t) (0xFF);	// segments OFF
 		break;
