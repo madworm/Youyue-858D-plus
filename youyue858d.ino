@@ -2,9 +2,9 @@
  * This is a custom firmware for my 'Youyue 858D+' hot-air soldering station.
  * It may or may not be useful to you, always double check if you use it.
  *
- * V1.33
+ * V1.34
  *
- * 2014 - Robert Spitzenpfeil
+ * 2015 - Robert Spitzenpfeil
  *
  * License: GNU GPL v2
  *
@@ -61,7 +61,7 @@
 
 #define FW_MAJOR_V 1
 #define FW_MINOR_V_A 3
-#define FW_MINOR_V_B 3
+#define FW_MINOR_V_B 4
 
 /*
  * PC5: FAN-speed (A5 in Arduino lingo) (OK)
@@ -708,56 +708,56 @@ void display_char(uint8_t digit, uint8_t character)
 	case '-':
 		PORTD = (uint8_t) (~0x40);	// '-'
 		break;
-	case 'O':
-		PORTD = (uint8_t) (~0x66);	// 'o'
-		break;
 	case '.':
 		PORTD = (uint8_t) (~0x10);	// '.'
-		break;
-	case 'C':
-		PORTD = (uint8_t) (~0x0F);	// 'C'
-		break;
-	case 'F':
-		PORTD = (uint8_t) (~0x4B);	// 'F'
 		break;
 	case 'A':
 		PORTD = (uint8_t) (~0xEB);	// 'A'
 		break;
-	case 'N':
-		PORTD = (uint8_t) (~0xAB);	// 'N'
-		break;
-	case 'P':
-		PORTD = (uint8_t) (~0xCB);	// 'P'
-		break;
-	case 'I':
-		PORTD = (uint8_t) (~0x20);	// 'i'
+	case 'C':
+		PORTD = (uint8_t) (~0x0F);	// 'C'
 		break;
 	case 'D':
 		PORTD = (uint8_t) (~0xE6);	// 'd'
 		break;
-	case 'T':
-		PORTD = (uint8_t) (~0x4E);	// 't'
+	case 'E':
+		PORTD = (uint8_t) (~0x4F);	// 'E'
+		break;
+	case 'F':
+		PORTD = (uint8_t) (~0x4B);	// 'F'
+		break;
+	case 'G':
+		PORTD = (uint8_t) (~0x6F);	// 'G'
 		break;
 	case 'H':
 		PORTD = (uint8_t) (~0x6A);	// 'h'
+		break;
+	case 'I':
+		PORTD = (uint8_t) (~0x20);	// 'i'
+		break;
+	case 'L':
+		PORTD = (uint8_t) (~0x0E);	// 'L'
+		break;
+	case 'N':
+		PORTD = (uint8_t) (~0xAB);	// 'N'
+		break;		
+	case 'O':
+		PORTD = (uint8_t) (~0x66);	// 'o'
+		break;
+	case 'P':
+		PORTD = (uint8_t) (~0xCB);	// 'P'
 		break;
 	case 'R':
 		PORTD = (uint8_t) (~0x42);	// 'r'
 		break;
 	case 'S':
 		PORTD = (uint8_t) (~0x6D);	// 'S'
-		break;
-	case 'L':
-		PORTD = (uint8_t) (~0x0E);	// 'L'
+		break;		
+	case 'T':
+		PORTD = (uint8_t) (~0x4E);	// 't'
 		break;
 	case 'V':
 		PORTD = (uint8_t) (~0x26);	// 'v'
-		break;
-	case 'G':
-		PORTD = (uint8_t) (~0x6F);	// 'G'
-		break;
-	case 'E':
-		PORTD = (uint8_t) (~0x4F);	// 'E'
 		break;
 	case 255:
 		PORTD = (uint8_t) (0xFF);	// segments OFF
@@ -838,7 +838,7 @@ void fan_test(void)
 		// if the wand is not in the cradle when powered up, go into a safe mode
 		// and display an error
 		while (1) {
-			display_string("FAN");
+			display_string("ERR");
 			delay(1000);
 			clear_display();
 			delay(1000);
@@ -882,7 +882,7 @@ void fan_test(void)
 		// if the wand is not in the cradle when powered up, go into a safe mode
 		// and display an error
 		while (1) {
-			display_string("FAN");
+			display_string("ERR");
 			delay(1000);
 			clear_display();
 			delay(1000);
