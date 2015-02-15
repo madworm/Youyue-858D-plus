@@ -90,8 +90,8 @@ Error behaviour:
   to allow fast cool-down and the display will blink "FAN" until power is cycled.
 
 * If the device is powered up and the wand is not in the cradle, an error message
-  will be displayed. Put the wand into the cradle and cycle power for normal
-  operation.
+  will be displayed ("CrA" + "dlE"). Put the wand into the cradle and cycle power
+  for normal operation.
 
   This should avoid any issues with the device being accidentally powered on 
   with the wand on the table (e.g. after power outage).
