@@ -2,7 +2,7 @@
  * This is a custom firmware for my 'Youyue 858D+' hot-air soldering station.
  * It may or may not be useful to you, always double check if you use it.
  *
- * V1.34
+ * V1.35
  *
  * 2015 - Robert Spitzenpfeil
  *
@@ -61,7 +61,7 @@
 
 #define FW_MAJOR_V 1
 #define FW_MINOR_V_A 3
-#define FW_MINOR_V_B 4
+#define FW_MINOR_V_B 5
 
 /*
  * PC5: FAN-speed (A5 in Arduino lingo) (OK)
@@ -838,7 +838,9 @@ void fan_test(void)
 		// if the wand is not in the cradle when powered up, go into a safe mode
 		// and display an error
 		while (1) {
-			display_string("ERR");
+			display_string("CRA");
+			delay(350);
+			display_string("DLE");
 			delay(1000);
 			clear_display();
 			delay(1000);
@@ -882,7 +884,9 @@ void fan_test(void)
 		// if the wand is not in the cradle when powered up, go into a safe mode
 		// and display an error
 		while (1) {
-			display_string("ERR");
+			display_string("CRA");
+			delay(350);
+			display_string("DLE");
 			delay(1000);
 			clear_display();
 			delay(1000);
