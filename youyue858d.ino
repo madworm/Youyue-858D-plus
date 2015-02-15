@@ -839,9 +839,9 @@ void fan_test(void)
 		// and display an error
 		while (1) {
 			display_string("CRA");
-			delay(350);
-			display_string("DLE");
 			delay(1000);
+			display_string("DLE");
+			delay(2000);
 			clear_display();
 			delay(1000);
 		}
@@ -885,9 +885,9 @@ void fan_test(void)
 		// and display an error
 		while (1) {
 			display_string("CRA");
-			delay(350);
-			display_string("DLE");
 			delay(1000);
+			display_string("DLE");
+			delay(2000);
 			clear_display();
 			delay(1000);
 		}
