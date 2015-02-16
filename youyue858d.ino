@@ -2,7 +2,7 @@
  * This is a custom firmware for my 'Youyue 858D+' hot-air soldering station.
  * It may or may not be useful to you, always double check if you use it.
  *
- * V1.36
+ * V1.37
  *
  * 2015 - Robert Spitzenpfeil
  *
@@ -61,7 +61,7 @@
 
 #define FW_MAJOR_V 1
 #define FW_MINOR_V_A 3
-#define FW_MINOR_V_B 6
+#define FW_MINOR_V_B 7
 
 /*
  * PC5: FAN-speed (A5 in Arduino lingo) (OK)
@@ -363,8 +363,10 @@ int main(void)
 					// * thermo couple has failed
 					// * true over-temperature condition
 					//
-					display_string("FAN");
+					display_string("°C");
 					delay(1000);
+					display_string("ERR");
+					delay(2000);
 					clear_display();
 					delay(1000);
 				}
@@ -761,6 +763,9 @@ void display_char(uint8_t digit, uint8_t character)
 		break;
 	case 'V':
 		PORTD = (uint8_t) (~0x26);	// 'v'
+		break;
+	case '°':
+	    	PORTD = (uint8_t) (~0xC9);	// '°'
 		break;
 	case 255:
 		PORTD = (uint8_t) (0xFF);	// segments OFF
