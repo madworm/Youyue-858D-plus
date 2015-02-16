@@ -873,6 +873,8 @@ void fan_test(void)
 			while (1) {
 				display_string("FAN");
 				delay(1000);
+				display_string("SPD");
+				delay(2000);
 				clear_display();
 				delay(1000);
 			}
