@@ -363,7 +363,7 @@ int main(void)
 					// * thermo couple has failed
 					// * true over-temperature condition
 					//
-					display_string("°C");
+					display_string("*C");
 					delay(1000);
 					display_string("ERR");
 					delay(2000);
@@ -764,7 +764,7 @@ void display_char(uint8_t digit, uint8_t character)
 	case 'V':
 		PORTD = (uint8_t) (~0x26);	// 'v'
 		break;
-	case '°':
+	case '*':
 	    	PORTD = (uint8_t) (~0xC9);	// '°'
 		break;
 	case 255:
