@@ -84,7 +84,8 @@ Error behaviour:
 ================
 
 * If the wand is disconnected or the thermo-couple has failed or the temperature
-  is above MAX_TEMP_ERR (550°C), the device will go into a "safe mode".
+  is above MAX_TEMP_ERR (550°C), the device will go into a "safe mode" and 
+  display the error message "°C" + "Err".
   
   The heater will be turned off permanently, the fan will be turned on 
   to allow fast cool-down and the display will blink "FAN" until power is cycled.
@@ -97,7 +98,7 @@ Error behaviour:
   with the wand on the table (e.g. after power outage).
 
 * If the fan-speed on power-up (fan-test) is out of range (F-L, F-h config parameters),
-  an error message "FAN" will be displayed.
+  an error message "FAN" + "SPd" will be displayed.
 
   (This does not necessarily detect a stalled fan, as the feedback is just the
    drive voltage, not an actual tacho signal!)
