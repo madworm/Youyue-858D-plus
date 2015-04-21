@@ -742,7 +742,7 @@ void display_char(uint8_t digit, uint8_t character)
 		break;
 	case 'N':
 		PORTD = (uint8_t) (~0xAB);	// 'N'
-		break;		
+		break;
 	case 'O':
 		PORTD = (uint8_t) (~0x66);	// 'o'
 		break;
@@ -754,18 +754,18 @@ void display_char(uint8_t digit, uint8_t character)
 		break;
 	case 'S':
 		PORTD = (uint8_t) (~0x6D);	// 'S'
-		break;		
+		break;
 	case 'T':
 		PORTD = (uint8_t) (~0x4E);	// 't'
 		break;
 	case 'U':
-		PORTD = (uint8_t) (~0x26);	// 'u'		
+		PORTD = (uint8_t) (~0x26);	// 'u'          
 		break;
 	case 'V':
 		PORTD = (uint8_t) (~0x26);	// 'v'
 		break;
 	case '*':
-	    	PORTD = (uint8_t) (~0xC9);	// '°'
+		PORTD = (uint8_t) (~0xC9);	// '°'
 		break;
 	case 255:
 		PORTD = (uint8_t) (0xFF);	// segments OFF
