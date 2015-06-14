@@ -8,7 +8,7 @@ H-FUSE: 0xDD [0xDF]
 E-FUSE: 0xFD [0xFD]
 
 
-If you use avrdude you should use use:
+If you use avrdude you should use:
 
 lock-bits: 0x0F [0x0F]
 
