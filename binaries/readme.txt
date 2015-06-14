@@ -1,15 +1,20 @@
 
-Fuse settings to run the ATmega168 using its internal RC oscillator at 8MHz, BOD: 2.7V, NO bootlaoder, ...
+Fuse settings to run the ATmega168 [328P] using its internal RC oscillator at 8MHz, BOD: 2.7V, NO bootloader, ...
 
-L-FUSE: 0xE2
-H-FUSE: 0xDD
-E-FUSE: 0xFD
+lock-bits: 0xFF
+
+L-FUSE: 0xE2 [0xE2]
+H-FUSE: 0xDD [0xDF]
+E-FUSE: 0xFD [0xFD]
+
 
 If you use avrdude you may also use:
 
-L-FUSE: 0xE2
-H-FUSE: 0xDD
-E-FUSE: 0x05
+lock-bits: 0xFF
+
+L-FUSE: 0xE2 [0xE2]
+H-FUSE: 0xDD [0xDF]
+E-FUSE: 0x05 [0x05]
 
 "Note that some numerical values refer to fuses containing undefined bits (set to '1' here).
 Depending on the target device these fuse bits will be read either as '0' or '1'.

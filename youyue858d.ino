@@ -48,8 +48,9 @@
  * LilyPad Arduino w/ ATmega168 (TESTED - WORKS)
  * LilyPad Arduino w/ ATmega328 (TESTED - WORKS)
  *
+ * For this to work, you need to use 'burn bootloader' ONCE
  * This will make sure suitable FUSE settings are used (8MHz RC-oscillator...)
- *
+ * After that, ONLY upload code using 'Upload Using Programmer' (bootloader removed again)
  *
  * DO NOT USE A BOOTLOADER WITH THE WATCHDOG TIMER
  *
