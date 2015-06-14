@@ -1,16 +1,16 @@
 
 Fuse settings to run the ATmega168 [328P] using its internal RC oscillator at 8MHz, BOD: 2.7V, NO bootloader, ...
 
-lock-bits: 0xFF
+lock-bits: 0xFF [0xFF]
 
 L-FUSE: 0xE2 [0xE2]
 H-FUSE: 0xDD [0xDF]
 E-FUSE: 0xFD [0xFD]
 
 
-If you use avrdude you may also use:
+If you use avrdude you should use use:
 
-lock-bits: 0xFF
+lock-bits: 0x0F [0x0F]
 
 L-FUSE: 0xE2 [0xE2]
 H-FUSE: 0xDD [0xDF]

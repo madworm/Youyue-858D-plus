@@ -48,9 +48,40 @@
  * LilyPad Arduino w/ ATmega168 (TESTED - WORKS)
  * LilyPad Arduino w/ ATmega328 (TESTED - WORKS)
  *
- * For this to work, you need to use 'burn bootloader' ONCE
- * This will make sure suitable FUSE settings are used (8MHz RC-oscillator...)
- * After that, ONLY upload code using 'Upload Using Programmer' (bootloader removed again)
+ * ONLY upload code using 'Upload Using Programmer'
+ *
+ *
+ *
+ * AVRDUDE command line for writing the FUSE settings to the chip (required once):
+ *
+ * avrdude -c <programmer> -P <port,optional> -p <target-mcu> -U lfuse:w:0xAA:m -U hfuse:w:0xBB:m -U efuse:w:0xCC:m -U lock:w:0xDD:m
+ *
+ * 
+ * 1) avrispmkii + 168
+ *
+ *    avrdude -c avrispmkii -p atmega168 -U lfuse:w:0xE2:m -U hfuse:w:0xDD:m -U efuse:w:0x05:m -U lock:w:0x0F:m
+ *    
+ * 2) usbtiny + 168
+ *
+ *    avrdude -c usbtiny -P usb -p atmega168 -U lfuse:w:0xE2:m -U hfuse:w:0xDD:m -U efuse:w:0x05:m -U lock:w:0x0F:m
+ *
+ * 3) usbasp + 168
+ *
+ *    avrdude -c usbasp -p atmega168 -v -U lfuse:w:0xE2:m -U hfuse:w:0xDD:m -U efuse:w:0x05:m -U lock:w:0x0F:m
+ *
+ * 4) avrispmkii + 328p
+ *
+ *    avrdude -c avrispmkii -p atmega328p -U lfuse:w:0xE2:m -U hfuse:w:0xDF:m -U efuse:w:0x05:m -U lock:w:0x0F:m
+ *    
+ * 5) usbtiny + 328p
+ *
+ *    avrdude -c usbtiny -P usb -p atmega328p -U lfuse:w:0xE2:m -U hfuse:w:0xDF:m -U efuse:w:0x05:m -U lock:w:0x0F:m
+ *
+ * 6) usbasp + 328p
+ *
+ *    avrdude -c usbasp -p atmega328p -v -U lfuse:w:0xE2:m -U hfuse:w:0xDF:m -U efuse:w:0x05:m -U lock:w:0x0F:m
+ *
+ *
  *
  * DO NOT USE A BOOTLOADER WITH THE WATCHDOG TIMER
  *
@@ -63,7 +94,6 @@
 #define FW_MAJOR_V 1
 #define FW_MINOR_V_A 3
 #define FW_MINOR_V_B 7
-
 /*
  * PC5: FAN-speed (A5 in Arduino lingo) (OK)
  * PC3: TIP122.base --> FAN (OK)
