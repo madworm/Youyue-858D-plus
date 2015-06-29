@@ -22,6 +22,8 @@ e.g. the 'Atten 858D' uses a different mainboard with a different brand micro co
 Naturally, this firmware will only work 'as is' for the exact mcu / mainboard combination I have.
 Please see the 'Docs' folder for schematic and PCB photos.
 
+MCU-Adapter [repository](//github.com/madworm/Youyue-858D-plus-MCU-adapter)(optional).
+
 
 ---
 
