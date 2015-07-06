@@ -207,7 +207,7 @@ int main(void)
 		static int16_t velocity = 0;
 		static float PID_drive = 0;
 
-		static int16_t button_counter = 0;
+		static uint16_t button_counter_single = 0;
 
 		static uint8_t temp_setpoint_saved = 1;
 		static int32_t temp_setpoint_saved_time = 0;
@@ -316,9 +316,9 @@ int main(void)
 #endif
 		} else if (SW0_PRESSED) {
 			button_input_time = millis();
-			button_counter++;
+			button_counter_single++;
 
-			if (button_counter == 200) {
+			if (button_counter_single == 200) {
 
 				if (temp_setpoint.value < temp_setpoint.value_max) {
 					temp_setpoint.value++;
@@ -327,43 +327,47 @@ int main(void)
 
 			}
 
-			if (button_counter == 600) {
+			if (button_counter_single == 600) {
 
 				if (temp_setpoint.value < (temp_setpoint.value_max - 10)) {
 					temp_setpoint.value += 10;
-					temp_setpoint_saved = 0;
-				}
-
-				button_counter = 201;
+				} else {
+                    temp_setpoint.value = temp_setpoint.value_max;
+                }
+                
+                temp_setpoint_saved = 0;
+				button_counter_single = 201;
 
 			}
 
 		} else if (SW1_PRESSED) {
 			button_input_time = millis();
-			button_counter++;
+			button_counter_single++;
 
-			if (button_counter == 200) {
+			if (button_counter_single == 200) {
 
 				if (temp_setpoint.value > temp_setpoint.value_min) {
 					temp_setpoint.value--;
-					temp_setpoint_saved = 0;
-				}
+                    temp_setpoint_saved = 0;
+				}                 
 
 			}
 
-			if (button_counter == 600) {
+			if (button_counter_single == 600) {
 
 				if (temp_setpoint.value > (temp_setpoint.value_min + 10)) {
-					temp_setpoint.value -= 10;
-					temp_setpoint_saved = 0;
-				}
+					temp_setpoint.value -= 10;	
+				}   else {
+				    temp_setpoint.value = temp_setpoint.value_min;
+                }
 
-				button_counter = 201;
+                temp_setpoint_saved = 0;
+				button_counter_single = 201;
 
 			}
 
 		} else {
-			button_counter = 0;
+			button_counter_single = 0;
 		}
 
 		if ((millis() - button_input_time) < SHOW_SETPOINT_TIMEOUT) {
