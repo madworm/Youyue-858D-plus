@@ -208,6 +208,7 @@ int main(void)
 		static float PID_drive = 0;
 
 		static uint16_t button_counter_single = 0;
+        static uint16_t button_counter_both = 0;
 
 		static uint8_t temp_setpoint_saved = 1;
 		static int32_t temp_setpoint_saved_time = 0;
@@ -293,27 +294,32 @@ int main(void)
 		}
 
 		if (SW0_PRESSED && SW1_PRESSED) {
-			HEATER_OFF;
-#ifdef USE_WATCHDOG
-			watchdog_off();
-#endif
-			change_config_parameter(&p_gain, "P");
-			change_config_parameter(&i_gain, "I");
-			change_config_parameter(&d_gain, "D");
-			change_config_parameter(&i_thresh, "ITH");
-			change_config_parameter(&temp_offset_corr, "TOF");
-			change_config_parameter(&temp_averages, "AVG");
-			change_config_parameter(&slp_timeout, "SLP");
-#ifdef CURRENT_SENSE_MOD
-			change_config_parameter(&fan_current_min, "FCL");
-			change_config_parameter(&fan_current_max, "FCH");
-#else
-			change_config_parameter(&fan_speed_min, "FSL");
-			change_config_parameter(&fan_speed_max, "FSH");
-#endif
-#ifdef USE_WATCHDOG
-			watchdog_on();
-#endif
+            button_counter_both++;
+            
+            if (button_counter_both == 6000) {
+		        HEATER_OFF;
+                #ifdef USE_WATCHDOG
+		        watchdog_off();
+                #endif
+		        change_config_parameter(&p_gain, "P");
+		        change_config_parameter(&i_gain, "I");
+		        change_config_parameter(&d_gain, "D");
+		        change_config_parameter(&i_thresh, "ITH");
+		        change_config_parameter(&temp_offset_corr, "TOF");
+		        change_config_parameter(&temp_averages, "AVG");
+		        change_config_parameter(&slp_timeout, "SLP");
+                #ifdef CURRENT_SENSE_MOD
+		        change_config_parameter(&fan_current_min, "FCL");
+		        change_config_parameter(&fan_current_max, "FCH");
+                #else
+		        change_config_parameter(&fan_speed_min, "FSL");
+		        change_config_parameter(&fan_speed_max, "FSH");
+                #endif
+                #ifdef USE_WATCHDOG
+		        watchdog_on();
+                #endif
+            }
+                            
 		} else if (SW0_PRESSED) {
 			button_input_time = millis();
 			button_counter_single++;
@@ -368,6 +374,7 @@ int main(void)
 
 		} else {
 			button_counter_single = 0;
+            button_counter_both = 0;
 		}
 
 		if ((millis() - button_input_time) < SHOW_SETPOINT_TIMEOUT) {
