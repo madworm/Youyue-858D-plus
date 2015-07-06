@@ -18,8 +18,7 @@
     <ToolchainFlavour>Native</ToolchainFlavour>
     <KeepTimersRunning>true</KeepTimersRunning>
     <OverrideVtor>false</OverrideVtor>
-    <OverrideVtorValue>
-    </OverrideVtorValue>
+    <OverrideVtorValue>exception_table</OverrideVtorValue>
     <eraseonlaunchrule>0</eraseonlaunchrule>
     <ProgFlashFromRam>true</ProgFlashFromRam>
     <RamSnippetAddress>0x20000000</RamSnippetAddress>
@@ -39,6 +38,30 @@
         </dependencies>
       </framework-data>
     </AsfFrameworkConfig>
+    <avrtool>com.atmel.avrdbg.tool.atmelice</avrtool>
+    <avrtoolinterface>ISP</avrtoolinterface>
+    <com_atmel_avrdbg_tool_ispmk2>
+      <ToolOptions>
+        <InterfaceProperties>
+          <IspClock>2000000</IspClock>
+        </InterfaceProperties>
+        <InterfaceName>ISP</InterfaceName>
+      </ToolOptions>
+      <ToolType>com.atmel.avrdbg.tool.ispmk2</ToolType>
+      <ToolNumber>000200212345</ToolNumber>
+      <ToolName>AVRISP mkII</ToolName>
+    </com_atmel_avrdbg_tool_ispmk2>
+    <com_atmel_avrdbg_tool_atmelice>
+      <ToolOptions>
+        <InterfaceProperties>
+          <IspClock>2000000</IspClock>
+        </InterfaceProperties>
+        <InterfaceName>ISP</InterfaceName>
+      </ToolOptions>
+      <ToolType>com.atmel.avrdbg.tool.atmelice</ToolType>
+      <ToolNumber>J41800022714</ToolNumber>
+      <ToolName>Atmel-ICE</ToolName>
+    </com_atmel_avrdbg_tool_atmelice>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
     <ToolchainSettings>
