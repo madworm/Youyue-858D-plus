@@ -2,19 +2,24 @@
  * This is a custom firmware for my 'Youyue 858D+' hot-air soldering station.
  * It may or may not be useful to you, always double check if you use it.
  *
- * V1.37
+ * V1.40
  *
  * 2015 - Robert Spitzenpfeil
+ * 2015 - Moritz Augsburger
  *
  * License: GNU GPL v2
  *
  *
- * Developed for / tested on:
- * --------------------------
+ * Developed for / tested on by Robert Spitzenpfeil:
+ * -------------------------------------------------
  *
- * PCB version: 858D V4.1
- * Date code:   20130421
+ * Date:	2015-02-01
+ * PCB version: 858D V6.0
+ * Date code:   20140415
+ * HW mods:	not tested!
  *
+ * Developed for / tested on by Robert Spitzenpfeil:
+ * -------------------------------------------------
  * 
  * Reported to work with (I did not test these myself):
  * ----------------------------------------------------
@@ -92,8 +97,8 @@
  */
 
 #define FW_MAJOR_V 1
-#define FW_MINOR_V_A 3
-#define FW_MINOR_V_B 7
+#define FW_MINOR_V_A 4
+#define FW_MINOR_V_B 0
 /*
  * PC5: FAN-speed (A5 in Arduino lingo) (OK)
  * PC3: TIP122.base --> FAN (OK)
