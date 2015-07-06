@@ -850,7 +850,17 @@ void fan_test(void)
 {
     HEATER_OFF;
     
-
+    // if the wand is not in the cradle when powered up, go into a safe mode
+    // and display an error
+    while (!REEDSW_CLOSED) {
+        display_string("CRA");
+        delay(1000);
+        display_string("DLE");
+        delay(2000);
+        clear_display();
+        delay(1000);
+    }
+        
 	if (REEDSW_CLOSED) {
 
 #ifdef CURRENT_SENSE_MOD
@@ -885,18 +895,6 @@ void fan_test(void)
 		}
 
 		FAN_OFF;
-        
-	} else {
-		// if the wand is not in the cradle when powered up, go into a safe mode
-		// and display an error
-		while (!REEDSW_CLOSED) {
-			display_string("CRA");
-			delay(1000);
-			display_string("DLE");
-			delay(2000);
-			clear_display();
-			delay(1000);
-		}
 	}
 }
 
