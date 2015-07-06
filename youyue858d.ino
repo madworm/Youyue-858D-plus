@@ -649,136 +649,144 @@ void display_number(int16_t number)
 	framebuffer[2] = (uint8_t) (number % 10);
 }
 
-void display_char(uint8_t digit, uint8_t character)
+void display_char(uint8_t digit, uint8_t character, uint8_t dot)
 {
-	// clear digit-bits in PORTB - all digits OFF (set LOW, as current source)
-	DIG0_OFF;
-	DIG1_OFF;
-	DIG2_OFF;
-	// all segments OFF (set HIGH, as current sinks)
-	SEGS_OFF;
-
-	switch (digit) {
-	case 0:
-		DIG0_ON;	// turn on digit #0 (from right)
-		break;
-	case 1:
-		DIG1_ON;	// #1
-		break;
-	case 2:
-		DIG2_ON;	// #2
-		break;
-	case 3:
-		DIG0_ON;	// #0 for the dot
-		break;
-	case 4:
-		DIG1_ON;	// #1 for the dot
-		break;
-	case 5:
-		DIG2_ON;	// #2 for the dot
-		break;
-	default:
-		break;
-	}
+    uint8_t portout = 0xFF;
 
 	switch (character) {
 	case 0:
-		PORTD = (uint8_t) (~0xAF);	// activate segments for displaying a '0'
+		portout = (uint8_t) (~0xAF);	// activate segments for displaying a '0'
 		break;
 	case 1:
-		PORTD = (uint8_t) (~0xA0);	// '1'
+		portout = (uint8_t) (~0xA0);	// '1'
 		break;
 	case 2:
-		PORTD = (uint8_t) (~0xC7);	// '2'
+		portout = (uint8_t) (~0xC7);	// '2'
 		break;
 	case 3:
-		PORTD = (uint8_t) (~0xE5);	// '3'
+		portout = (uint8_t) (~0xE5);	// '3'
 		break;
 	case 4:
-		PORTD = (uint8_t) (~0xE8);	// '4'
+		portout = (uint8_t) (~0xE8);	// '4'
 		break;
 	case 5:
-		PORTD = (uint8_t) (~0x6D);	// '5'
+		portout = (uint8_t) (~0x6D);	// '5'
 		break;
 	case 6:
-		PORTD = (uint8_t) (~0x6F);	// '6'
+		portout = (uint8_t) (~0x6F);	// '6'
 		break;
 	case 7:
-		PORTD = (uint8_t) (~0xA1);	// '7'
+		portout = (uint8_t) (~0xA1);	// '7'
 		break;
 	case 8:
-		PORTD = (uint8_t) (~0xEF);	// '8'
+		portout = (uint8_t) (~0xEF);	// '8'
 		break;
 	case 9:
-		PORTD = (uint8_t) (~0xE9);	// '9'
+		portout = (uint8_t) (~0xE9);	// '9'
 		break;
 	case '-':
-		PORTD = (uint8_t) (~0x40);	// '-'
+		portout = (uint8_t) (~0x40);	// '-'
 		break;
 	case '.':
-		PORTD = (uint8_t) (~0x10);	// '.'
+		portout = (uint8_t) (~0x10);	// '.'
 		break;
 	case 'A':
-		PORTD = (uint8_t) (~0xEB);	// 'A'
+		portout = (uint8_t) (~0xEB);	// 'A'
 		break;
 	case 'C':
-		PORTD = (uint8_t) (~0x0F);	// 'C'
+		portout = (uint8_t) (~0x0F);	// 'C'
 		break;
 	case 'D':
-		PORTD = (uint8_t) (~0xE6);	// 'd'
+		portout = (uint8_t) (~0xE6);	// 'd'
 		break;
 	case 'E':
-		PORTD = (uint8_t) (~0x4F);	// 'E'
+		portout = (uint8_t) (~0x4F);	// 'E'
 		break;
 	case 'F':
-		PORTD = (uint8_t) (~0x4B);	// 'F'
+		portout = (uint8_t) (~0x4B);	// 'F'
 		break;
 	case 'G':
-		PORTD = (uint8_t) (~0x6F);	// 'G'
+		portout = (uint8_t) (~0x6F);	// 'G'
 		break;
 	case 'H':
-		PORTD = (uint8_t) (~0x6A);	// 'h'
+		portout = (uint8_t) (~0x6A);	// 'h'
 		break;
 	case 'I':
-		PORTD = (uint8_t) (~0x20);	// 'i'
+		portout = (uint8_t) (~0x20);	// 'i'
 		break;
 	case 'L':
-		PORTD = (uint8_t) (~0x0E);	// 'L'
+		portout = (uint8_t) (~0x0E);	// 'L'
 		break;
 	case 'N':
-		PORTD = (uint8_t) (~0xAB);	// 'N'
+		portout = (uint8_t) (~0xAB);	// 'N'
 		break;
 	case 'O':
-		PORTD = (uint8_t) (~0x66);	// 'o'
+		portout = (uint8_t) (~0x66);	// 'o'
 		break;
 	case 'P':
-		PORTD = (uint8_t) (~0xCB);	// 'P'
+		portout = (uint8_t) (~0xCB);	// 'P'
 		break;
 	case 'R':
-		PORTD = (uint8_t) (~0x42);	// 'r'
+		portout = (uint8_t) (~0x42);	// 'r'
 		break;
 	case 'S':
-		PORTD = (uint8_t) (~0x6D);	// 'S'
+		portout = (uint8_t) (~0x6D);	// 'S'
 		break;
 	case 'T':
-		PORTD = (uint8_t) (~0x4E);	// 't'
+		portout = (uint8_t) (~0x4E);	// 't'
 		break;
 	case 'U':
-		PORTD = (uint8_t) (~0x26);	// 'u'          
+		portout = (uint8_t) (~0x26);	// 'u'          
 		break;
 	case 'V':
-		PORTD = (uint8_t) (~0x26);	// 'v'
+		portout = (uint8_t) (~0x26);	// 'v'
 		break;
 	case '*':
-		PORTD = (uint8_t) (~0xC9);	// '°'
+		portout = (uint8_t) (~0xC9);	// '°'
 		break;
 	case 255:
-		PORTD = (uint8_t) (0xFF);	// segments OFF
+		portout = (uint8_t) (0xFF);	// segments OFF
 		break;
 	default:
-		PORTD = (uint8_t) (~0x10);	// '.'
+		portout = (uint8_t) (~0x10);	// '.'
 		break;
 	}
+    
+    switch(dot) {
+        case 255:
+            break;
+        default:
+            portout &= (~0x10);	// '.'
+            break;
+    }
+    
+    // all segments OFF (set HIGH, as current sinks)
+    SEGS_OFF;
+    PORTD = portout;
+
+    switch (digit) {
+        case 0:
+            DIG0_ON;	// turn on digit #0 (from right)
+            DIG1_OFF;
+            DIG2_OFF;
+            break;
+        case 1:
+            DIG1_ON;	// #1
+            DIG0_OFF;
+            DIG2_OFF;
+            break;
+        case 2:
+            DIG2_ON;	// #2
+            DIG0_OFF;
+            DIG1_OFF;
+            break;
+        default:
+            DIG0_OFF;
+            DIG1_OFF;
+            DIG2_OFF;
+            break;
+    }
+
 }
 
 void display_set_temp(int16_t number) {
@@ -934,14 +942,10 @@ ISR(TIMER1_COMPA_vect)
     static uint8_t ct0, ct1, rpt;
     uint8_t i;
 
-	DIG0_OFF;
-	DIG1_OFF;
-	DIG2_OFF;
-
-	display_char(digit, framebuffer[digit]);
+	display_char(digit, framebuffer[digit], framebuffer[digit+3]);
 	digit++;
 
-	if (digit == 6) {
+	if (digit == 3) {
 		digit = 0;
 	}
     
