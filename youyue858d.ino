@@ -851,33 +851,38 @@ void char_test(void)
 	}
 }
 
-#ifdef CURRENT_SENSE_MOD
 void fan_test(void)
 {
-	HEATER_OFF;
-
-	uint16_t fan_current;
+    HEATER_OFF;
+    
 
 	if (REEDSW_CLOSED) {
 
+#ifdef CURRENT_SENSE_MOD
+        uint16_t fan_current;
 		FAN_ON;
 		delay(3000);
 		fan_current = analogRead(A2);
 
-		/*
-		   while(1) {
-		   fan_current = analogRead(A2);
-		   display_number(fan_current);  
-		   }
-		 */
-
 		if ((fan_current < (uint16_t) (fan_current_min.value)) || (fan_current > (uint16_t) (fan_current_max.value))) {
+#else //CURRENT_SENSE_MOD
+        uint16_t fan_speed;
+        FAN_ON;
+        delay(3000);
+        fan_speed = analogRead(A5);
+
+        if ((fan_speed < (uint16_t) (fan_speed_min.value)) || (fan_speed > (uint16_t) (fan_speed_max.value))) {
+#endif //CURRENT_SENSE_MOD
 			// the fan is not working as it should
 			FAN_OFF;
 			while (1) {
 				display_string("FAN");
 				delay(1000);
+                #ifdef CURRENT_SENSE_MOD
 				display_string("CUR");
+                #else //CURRENT_SENSE_MOD
+                display_string("SPD");
+                #endif //CURRENT_SENSE_MOD
 				delay(2000);
 				clear_display();
 				delay(1000);
@@ -885,7 +890,7 @@ void fan_test(void)
 		}
 
 		FAN_OFF;
-
+        
 	} else {
 		// if the wand is not in the cradle when powered up, go into a safe mode
 		// and display an error
@@ -899,55 +904,7 @@ void fan_test(void)
 		}
 	}
 }
-#else
-void fan_test(void)
-{
-	HEATER_OFF;
 
-	uint16_t fan_speed;
-
-	if (REEDSW_CLOSED) {
-
-		FAN_ON;
-		delay(3000);
-		fan_speed = analogRead(A5);
-
-		/*
-		   while(1) {
-		   fan_speed = analogRead(A5);
-		   display_number(fan_speed);  
-		   }
-		 */
-
-		if ((fan_speed < (uint16_t) (fan_speed_min.value)) || (fan_speed > (uint16_t) (fan_speed_max.value))) {
-			// the fan is not working as it should
-			FAN_OFF;
-			while (1) {
-				display_string("FAN");
-				delay(1000);
-				display_string("SPD");
-				delay(2000);
-				clear_display();
-				delay(1000);
-			}
-		}
-
-		FAN_OFF;
-
-	} else {
-		// if the wand is not in the cradle when powered up, go into a safe mode
-		// and display an error
-		while (!REEDSW_CLOSED) {
-			display_string("CRA");
-			delay(1000);
-			display_string("DLE");
-			delay(2000);
-			clear_display();
-			delay(1000);
-		}
-	}
-}
-#endif
 
 void show_firmware_version(void)
 {
