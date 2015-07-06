@@ -92,6 +92,9 @@ uint8_t get_key_common( uint8_t key_mask );
 #define TRIAC_OFF ( PORTB |= _BV(PB1) )
 #define HEATER_OFF TRIAC_OFF
 
+#define SW0_PRESSED ( !(PINB & _BV(PB5)) )
+#define SW1_PRESSED ( !(PINB & _BV(PB2)) )
+
 #define REEDSW_CLOSED ( !(PINB & _BV(PB4)) )
 #define REEDSW_OPEN ( PINB & _BV(PB4) )
 

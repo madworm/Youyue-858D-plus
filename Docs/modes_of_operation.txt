@@ -32,11 +32,11 @@ Temperature control:
 * Fan Only mode (short press Down with 50 °C set)
 
 
-PID settings:
-=============
+Settings:
+=========
 
 * Config mode is entered by pressing both buttons _at the same time_
-* When PID settings are changed, the heater is always off
+* When Settings are changed, the heater is always off
 * The state of the fan is not changed when entering config mode
 * The display will show an abbreviated name for each parameter
 * Going to the next one is done by pressing both buttons _at the same time_
@@ -46,6 +46,14 @@ PID settings:
   d)            d_gain    0...999
 ith)       i_threshold    0...100
 tof)  temp_offset_corr -100...100
+avg)     temp_averages  100...999
+slp)       slp_timeout    0...30
+fcl)   fan_current_min    0...999
+fch)   fan_current_max    0...999
+fsl)     fan_speed_min  120...180
+fsh)     fan_speed_max  300...400
+
+* fsl/fsh and fcl/fch are depending on CURRENT_SENSE_MOD compile time option
 
 * All parameters stored / loaded from EEPROM are checked if within range
 * Invalid parameters are reset to their default values when stored / loaded
@@ -60,6 +68,12 @@ temp_offset_corr: can be used to correct a temperature difference between the di
 
                   increase, if you measure too high a temperature			
                   decrease, if measured temperature is too low
+
+Fan Speed/Current:
+==================
+
+* Can be tested when pressing up while powering on, current value is shown and updated.
+* Hard reset to leave
 
 
 Restoring default:

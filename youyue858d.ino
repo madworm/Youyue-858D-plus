@@ -464,10 +464,26 @@ void setup_858D(void)
 		EEPROM.write(0, 0x22);
 	}
 
-    if ( get_key_common(1<<KEY_UP|1<<KEY_DOWN)) {
+    if ( SW0_PRESSED && SW1_PRESSED ) {
 		restore_default_conf();
-	}
-
+	} else if( SW0_PRESSED ) {
+        display_string("FAN");
+        delay(1000);
+        display_string("TST");
+        delay(1000);
+        FAN_ON;
+        while (1) {
+            uint16_t fan;
+            delay(500);
+            #ifdef CURRENT_SENSE_MOD
+            fan = analogRead(A2);
+            #else //CURRENT_SENSE_MOD
+            fan = analogRead(A5);
+            #endif //CURRENT_SENSE_MOD
+            display_number(fan);
+        }
+    } 
+         
 	eep_load(&p_gain);
 	eep_load(&i_gain);
 	eep_load(&d_gain);
