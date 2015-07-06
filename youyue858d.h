@@ -68,35 +68,6 @@ uint8_t get_key_rpt_l( uint8_t key_mask );
 uint8_t get_key_common( uint8_t key_mask );
 
 
-#if ( defined(__AVR_ATmega328P__) || defined(__AVR_ATmega328__) )
-#define PB0 0
-#define PB1 1
-#define PB2 2
-#define PB3 3
-#define PB4 4
-#define PB5 5
-#define PB6 6
-#define PB7 7
-
-#define PC0 0
-#define PC1 1
-#define PC2 2
-#define PC3 3
-#define PC4 4
-#define PC5 5
-#define PC6 6
-#define PC7 7
-
-#define PD0 0
-#define PD1 1
-#define PD2 2
-#define PD3 3
-#define PD4 4
-#define PD5 5
-#define PD6 6
-#define PD7 7
-#endif
-
 #define FAN_OFF ( PORTC |= _BV(PC3) )
 #define FAN_ON  ( PORTC &= ~_BV(PC3) )
 #define FAN_IS_ON ( !(PINC & _BV(PC3)) )
@@ -128,13 +99,13 @@ uint8_t get_key_common( uint8_t key_mask );
 #define HEATER_DUTY_CYCLE_MAX 512L
 #define PWM_CYCLES 512L
 
-#define P_GAIN_DEFAULT 650.0
-#define I_GAIN_DEFAULT 15.0
-#define D_GAIN_DEFAULT 500.0
+#define P_GAIN_DEFAULT 650
+#define I_GAIN_DEFAULT 15
+#define D_GAIN_DEFAULT 500
 #define I_THRESH_DEFAULT 45
-#define P_GAIN_SCALING 100.0
-#define I_GAIN_SCALING 10000.0
-#define D_GAIN_SCALING 25.0
+#define P_GAIN_SCALING 100
+#define I_GAIN_SCALING 10000
+#define D_GAIN_SCALING 25
 
 #define TEMP_OFFSET_CORR_DEFAULT 33
 #define TEMP_SETPOINT_DEFAULT 75
