@@ -878,7 +878,7 @@ void fan_test(void)
 	} else {
 		// if the wand is not in the cradle when powered up, go into a safe mode
 		// and display an error
-		while (1) {
+		while (!REEDSW_CLOSED) {
 			display_string("CRA");
 			delay(1000);
 			display_string("DLE");
@@ -926,7 +926,7 @@ void fan_test(void)
 	} else {
 		// if the wand is not in the cradle when powered up, go into a safe mode
 		// and display an error
-		while (1) {
+		while (!REEDSW_CLOSED) {
 			display_string("CRA");
 			delay(1000);
 			display_string("DLE");
