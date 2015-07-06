@@ -1,3 +1,6 @@
 *~
 *bak
 *.hex
+/Debug
+/Release
+/Visual Micro
