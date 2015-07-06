@@ -58,6 +58,15 @@ void watchdog_off_early(void) __attribute__ ((naked)) __attribute__ ((section(".
 void watchdog_off(void);
 void watchdog_on(void);
 #endif
+uint8_t get_key_press( uint8_t key_mask );
+uint8_t get_key_rpt( uint8_t key_mask );
+uint8_t get_key_state( uint8_t key_mask );
+uint8_t get_key_short( uint8_t key_mask );
+uint8_t get_key_long( uint8_t key_mask );
+uint8_t get_key_long_r( uint8_t key_mask );
+uint8_t get_key_rpt_l( uint8_t key_mask );
+uint8_t get_key_common( uint8_t key_mask );
+
 
 #if ( defined(__AVR_ATmega328P__) || defined(__AVR_ATmega328__) )
 #define PB0 0
@@ -111,9 +120,6 @@ void watchdog_on(void);
 #define TRIAC_OFF ( PORTB |= _BV(PB1) )
 #define HEATER_OFF TRIAC_OFF
 
-#define SW0_PRESSED ( !(PINB & _BV(PB5)) )
-#define SW1_PRESSED ( !(PINB & _BV(PB2)) )
-
 #define REEDSW_CLOSED ( !(PINB & _BV(PB4)) )
 #define REEDSW_OPEN ( PINB & _BV(PB4) )
 
@@ -150,4 +156,15 @@ void watchdog_on(void);
 
 #define SLP_TIMEOUT_DEFAULT 10
 
-#endif
+#define KEY_DDR         DDRB
+#define KEY_PORT        PORTB
+#define KEY_PIN         PINB
+#define KEY_UP          5
+#define KEY_DOWN        2
+#define ALL_KEYS        (1<<KEY_DOWN | 1<<KEY_UP)
+
+#define REPEAT_MASK     (1<<KEY_DOWN | 1<<KEY_UP)       // repeat: key1, key2
+#define REPEAT_START    255                        // after 500ms
+#define REPEAT_NEXT     50                        // every 200ms
+
+#endif // youyoue858d_h

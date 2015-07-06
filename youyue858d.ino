@@ -147,6 +147,10 @@ CPARAM fan_speed_min = { 120, 180, FAN_SPEED_MIN_DEFAULT, FAN_SPEED_MIN_DEFAULT,
 CPARAM fan_speed_max = { 300, 400, FAN_SPEED_MAX_DEFAULT, FAN_SPEED_MAX_DEFAULT, 20, 21 };
 #endif
 
+volatile uint8_t key_state;     // debounced and inverted key state: bit = 1: key pressed
+volatile uint8_t key_press;     // key press detect
+volatile uint8_t key_rpt;       // key long press and repeat
+
 int main(void)
 {
 	init();			// make sure the Arduino-specific stuff is up and running (timers... see 'wiring.c')
@@ -206,9 +210,6 @@ int main(void)
 		static int32_t error_accu = 0;
 		static int16_t velocity = 0;
 		static float PID_drive = 0;
-
-		static uint16_t button_counter_single = 0;
-        static uint16_t button_counter_both = 0;
 
 		static uint8_t temp_setpoint_saved = 1;
 		static int32_t temp_setpoint_saved_time = 0;
@@ -293,89 +294,62 @@ int main(void)
 			FAN_ON;
 		}
 
-		if (SW0_PRESSED && SW1_PRESSED) {
-            button_counter_both++;
-            
-            if (button_counter_both == 6000) {
-		        HEATER_OFF;
-                #ifdef USE_WATCHDOG
-		        watchdog_off();
-                #endif
-		        change_config_parameter(&p_gain, "P");
-		        change_config_parameter(&i_gain, "I");
-		        change_config_parameter(&d_gain, "D");
-		        change_config_parameter(&i_thresh, "ITH");
-		        change_config_parameter(&temp_offset_corr, "TOF");
-		        change_config_parameter(&temp_averages, "AVG");
-		        change_config_parameter(&slp_timeout, "SLP");
-                #ifdef CURRENT_SENSE_MOD
-		        change_config_parameter(&fan_current_min, "FCL");
-		        change_config_parameter(&fan_current_max, "FCH");
-                #else
-		        change_config_parameter(&fan_speed_min, "FSL");
-		        change_config_parameter(&fan_speed_max, "FSH");
-                #endif
-                #ifdef USE_WATCHDOG
-		        watchdog_on();
-                #endif
+        if (get_key_short(1<<KEY_UP)) {
+            button_input_time = millis();
+            if (temp_setpoint.value < temp_setpoint.value_max) {
+                temp_setpoint.value++;
+                temp_setpoint_saved = 0;
             }
-                            
-		} else if (SW0_PRESSED) {
+        } else if (get_key_short(1<<KEY_DOWN)) {
+            button_input_time = millis();
+            if (temp_setpoint.value > temp_setpoint.value_min) {
+                temp_setpoint.value--;
+                temp_setpoint_saved = 0;
+            }
+        } else if (get_key_long_r(1<<KEY_UP) || get_key_rpt_l(1<<KEY_UP)) {
 			button_input_time = millis();
-			button_counter_single++;
-
-			if (button_counter_single == 200) {
-
-				if (temp_setpoint.value < temp_setpoint.value_max) {
-					temp_setpoint.value++;
-					temp_setpoint_saved = 0;
-				}
-
-			}
-
-			if (button_counter_single == 600) {
-
-				if (temp_setpoint.value < (temp_setpoint.value_max - 10)) {
-					temp_setpoint.value += 10;
-				} else {
-                    temp_setpoint.value = temp_setpoint.value_max;
-                }
+            
+            if (temp_setpoint.value < (temp_setpoint.value_max - 10)) {
+				temp_setpoint.value += 10;
+			} else {
+                temp_setpoint.value = temp_setpoint.value_max;
+            }
                 
-                temp_setpoint_saved = 0;
-				button_counter_single = 201;
+            temp_setpoint_saved = 0;
 
-			}
-
-		} else if (SW1_PRESSED) {
+		} else if (get_key_long_r(1<<KEY_DOWN) || get_key_rpt_l(1<<KEY_DOWN)) {
 			button_input_time = millis();
-			button_counter_single++;
 
-			if (button_counter_single == 200) {
+			if (temp_setpoint.value > (temp_setpoint.value_min + 10)) {
+				temp_setpoint.value -= 10;	
+			}   else {
+				temp_setpoint.value = temp_setpoint.value_min;
+            }
 
-				if (temp_setpoint.value > temp_setpoint.value_min) {
-					temp_setpoint.value--;
-                    temp_setpoint_saved = 0;
-				}                 
-
-			}
-
-			if (button_counter_single == 600) {
-
-				if (temp_setpoint.value > (temp_setpoint.value_min + 10)) {
-					temp_setpoint.value -= 10;	
-				}   else {
-				    temp_setpoint.value = temp_setpoint.value_min;
-                }
-
-                temp_setpoint_saved = 0;
-				button_counter_single = 201;
-
-			}
-
-		} else {
-			button_counter_single = 0;
-            button_counter_both = 0;
-		}
+            temp_setpoint_saved = 0;
+        } else if ( get_key_common(1<<KEY_UP|1<<KEY_DOWN)) {
+            HEATER_OFF;
+            #ifdef USE_WATCHDOG
+            watchdog_off();
+            #endif
+            change_config_parameter(&p_gain, "P");
+            change_config_parameter(&i_gain, "I");
+            change_config_parameter(&d_gain, "D");
+            change_config_parameter(&i_thresh, "ITH");
+            change_config_parameter(&temp_offset_corr, "TOF");
+            change_config_parameter(&temp_averages, "AVG");
+            change_config_parameter(&slp_timeout, "SLP");
+            #ifdef CURRENT_SENSE_MOD
+            change_config_parameter(&fan_current_min, "FCL");
+            change_config_parameter(&fan_current_max, "FCH");
+            #else
+            change_config_parameter(&fan_speed_min, "FSL");
+            change_config_parameter(&fan_speed_max, "FSH");
+            #endif
+            #ifdef USE_WATCHDOG
+            watchdog_on();
+            #endif
+        }
 
 		if ((millis() - button_input_time) < SHOW_SETPOINT_TIMEOUT) {
 			display_number(temp_setpoint.value);	// show temperature setpoint
@@ -475,7 +449,7 @@ void setup_858D(void)
 		EEPROM.write(0, 0x22);
 	}
 
-	if (SW0_PRESSED && SW1_PRESSED) {
+    if ( get_key_common(1<<KEY_UP|1<<KEY_DOWN)) {
 		restore_default_conf();
 	}
 
@@ -528,54 +502,28 @@ void change_config_parameter(CPARAM * param, const char *string)
 	delay(750);		// let the user read what is shown
 
 	uint8_t loop = 1;
-	uint16_t button_counter = 0;
 
 	while (loop == 1) {
+        if (get_key_short(1<<KEY_UP)) {
+            if (param->value < param->value_max) {
+                param->value++;
+            }
+        } else if (get_key_short(1<<KEY_DOWN)) {
+            if (param->value > param->value_min) {
+                param->value--;
+            }
+        } else if (get_key_long_r(1<<KEY_UP) || get_key_rpt_l(1<<KEY_UP)) {
+            if (param->value < param->value_max - 10) {
+                param->value += 10;
+            }
+        } else if (get_key_long_r(1<<KEY_DOWN) || get_key_rpt_l(1<<KEY_DOWN)) {
+            if (param->value > param->value_min + 10) {
+                param->value -= 10;
+            }
+        } else if ( get_key_common(1<<KEY_UP|1<<KEY_DOWN)) {
+            loop = 0;
+        }            
 
-		if (SW0_PRESSED && SW1_PRESSED) {
-			loop = 0;
-		} else if (SW0_PRESSED) {
-			button_counter++;
-
-			if (button_counter == 500) {
-
-				if (param->value < param->value_max) {
-					param->value++;
-				}
-			}
-
-			if (button_counter == 2000) {
-
-				if (param->value < param->value_max - 10) {
-					param->value += 10;
-				}
-				button_counter = 501;
-
-			}
-
-		} else if (SW1_PRESSED) {
-			button_counter++;
-
-			if (button_counter == 500) {
-
-				if (param->value > param->value_min) {
-					param->value--;
-				}
-			}
-
-			if (button_counter == 2000) {
-
-				if (param->value > param->value_min + 10) {
-					param->value -= 10;
-				}
-
-				button_counter = 501;
-
-			}
-
-		} else {
-			button_counter = 0;
-		}
 		display_number(param->value);
 	}
 	set_eeprom_saved_dot();
@@ -948,7 +896,7 @@ void setup_timer1_ctc(void)
 	TCCR1A &= ~(_BV(COM1A1) | _BV(COM1A0) | _BV(COM1B1) | _BV(COM1B0));
 
 	/* set top value for TCNT1 */
-	OCR1A = 256;		// display refresh about 80Hz
+	OCR1A = 256;		// display refresh about 80Hz = 12.5ms
 
 	/* enable COMPA isr */
 	TIMSK1 |= _BV(OCIE1A);
@@ -960,6 +908,8 @@ void setup_timer1_ctc(void)
 ISR(TIMER1_COMPA_vect)
 {
 	static uint8_t digit = 0;
+    static uint8_t ct0, ct1, rpt;
+    uint8_t i;
 
 	DIG0_OFF;
 	DIG1_OFF;
@@ -971,7 +921,87 @@ ISR(TIMER1_COMPA_vect)
 	if (digit == 6) {
 		digit = 0;
 	}
+    
+    i = key_state ^ ~KEY_PIN;                       // key changed ?
+    ct0 = ~( ct0 & i );                             // reset or count ct0
+    ct1 = ct0 ^ (ct1 & i);                          // reset or count ct1
+    i &= ct0 & ct1;                                 // count until roll over ?
+    key_state ^= i;                                 // then toggle debounced state
+    key_press |= key_state & i;                     // 0->1: key press detect
+      
+    if( (key_state & REPEAT_MASK) == 0 )            // check repeat function
+    rpt = REPEAT_START;                          // start delay
+    if( --rpt == 0 ){
+        rpt = REPEAT_NEXT;                            // repeat delay
+        key_rpt |= key_state & REPEAT_MASK;
+    }
+    
 }
+
+///////////////////////////////////////////////////////////////////
+//
+// check if a key has been pressed. Each pressed key is reported
+// only once
+//
+uint8_t get_key_press( uint8_t key_mask ) {
+    cli();                                          // read and clear atomic !
+    key_mask &= key_press;                          // read key(s)
+    key_press ^= key_mask;                          // clear key(s)
+    sei();
+    return key_mask;
+}
+
+///////////////////////////////////////////////////////////////////
+//
+// check if a key has been pressed long enough such that the
+// key repeat functionality kicks in. After a small setup delay
+// the key is reported being pressed in subsequent calls
+// to this function. This simulates the user repeatedly
+// pressing and releasing the key.
+//
+uint8_t get_key_rpt( uint8_t key_mask ) {
+    cli();                                          // read and clear atomic !
+    key_mask &= key_rpt;                            // read key(s)
+    key_rpt ^= key_mask;                            // clear key(s)
+    sei();
+    return key_mask;
+}
+
+///////////////////////////////////////////////////////////////////
+//
+// check if a key is pressed right now
+//
+uint8_t get_key_state( uint8_t key_mask ) {
+    key_mask &= key_state;
+    return key_mask;
+}
+
+///////////////////////////////////////////////////////////////////
+//
+uint8_t get_key_short( uint8_t key_mask ) {
+    cli();                                          // read key state and key press atomic !
+    return get_key_press( ~key_state & key_mask );
+}
+
+///////////////////////////////////////////////////////////////////
+//
+uint8_t get_key_long( uint8_t key_mask ) {
+    return get_key_press( get_key_rpt( key_mask ));
+}
+
+uint8_t get_key_long_r( uint8_t key_mask ) {     // if repeat function needed
+    return get_key_press( get_key_rpt( key_press & key_mask ));
+}
+
+
+uint8_t get_key_rpt_l( uint8_t key_mask ) {      // if long function needed
+    return get_key_rpt( ~key_press & key_mask );
+}
+
+uint8_t get_key_common( uint8_t key_mask ){
+    return get_key_press((key_press & key_mask) == key_mask ? key_mask : 0);
+}
+
 
 #ifdef USE_WATCHDOG
 void watchdog_off(void)
