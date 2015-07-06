@@ -1,4 +1,4 @@
-
+﻿
 
 Once the device (cold, wand in cradle) is turned on, it will do the following:
 ==============================================================================
@@ -29,6 +29,7 @@ Temperature control:
 * Long button press:  +- 10°C
 * The set-point is stored in eeprom
 * Temperature range: 50...500 °C
+* Fan Only mode (short press Down with 50 °C set)
 
 
 PID settings:
@@ -91,8 +92,7 @@ Error behaviour:
   to allow fast cool-down and the display will blink "FAN" until power is cycled.
 
 * If the device is powered up and the wand is not in the cradle, an error message
-  will be displayed ("CrA" + "dlE"). Put the wand into the cradle and cycle power
-  for normal operation.
+  will be displayed ("CrA" + "dlE"). Put the wand into the cradle for normal operation.
 
   This should avoid any issues with the device being accidentally powered on 
   with the wand on the table (e.g. after power outage).

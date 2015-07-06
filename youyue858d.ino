@@ -222,7 +222,11 @@ int main(void)
 			temp_inst = 0;
 		}
 
-		if (REEDSW_OPEN && (temp_setpoint.value >= temp_setpoint.value_min)
+        if( temp_setpoint.value == 0 ) {
+            HEATER_OFF;
+            heater_start_time = millis();
+            clear_dot();
+        } else if (REEDSW_OPEN && (temp_setpoint.value >= temp_setpoint.value_min)
 		    && (temp_average < MAX_TEMP_ERR) && ((millis() - heater_start_time) < ((uint32_t) (slp_timeout.value) * 60 * 1000))) {
 
 			FAN_ON;
@@ -296,20 +300,27 @@ int main(void)
 
         if (get_key_short(1<<KEY_UP)) {
             button_input_time = millis();
-            if (temp_setpoint.value < temp_setpoint.value_max) {
+            if( temp_setpoint.value == 0 ) {
+                temp_setpoint.value = temp_setpoint.value_min;
+            } else if (temp_setpoint.value < temp_setpoint.value_max) {
                 temp_setpoint.value++;
-                temp_setpoint_saved = 0;
             }
+            temp_setpoint_saved = 0;
         } else if (get_key_short(1<<KEY_DOWN)) {
             button_input_time = millis();
             if (temp_setpoint.value > temp_setpoint.value_min) {
                 temp_setpoint.value--;
                 temp_setpoint_saved = 0;
+            } else if ( temp_setpoint.value == temp_setpoint.value_min ) {
+                temp_setpoint.value = 0;
+                // never save fan only (will also reset temp to default...
+                temp_setpoint_saved = 1;
             }
         } else if (get_key_long_r(1<<KEY_UP) || get_key_rpt_l(1<<KEY_UP)) {
 			button_input_time = millis();
-            
-            if (temp_setpoint.value < (temp_setpoint.value_max - 10)) {
+            if( temp_setpoint.value == 0 ) {
+                temp_setpoint.value = temp_setpoint.value_min;
+            } else if (temp_setpoint.value < (temp_setpoint.value_max - 10)) {
 				temp_setpoint.value += 10;
 			} else {
                 temp_setpoint.value = temp_setpoint.value_max;
@@ -352,15 +363,19 @@ int main(void)
         }
 
 		if ((millis() - button_input_time) < SHOW_SETPOINT_TIMEOUT) {
-			display_number(temp_setpoint.value);	// show temperature setpoint
+			display_set_temp(temp_setpoint.value);	// show temperature setpoint
 		} else {
 			if (temp_setpoint_saved == 0) {
-				set_eeprom_saved_dot();
-				eep_save(&temp_setpoint);
-				temp_setpoint_saved_time = millis();
+			    set_eeprom_saved_dot();
+			    eep_save(&temp_setpoint);
+			    temp_setpoint_saved_time = millis();
 				temp_setpoint_saved = 1;
 			} else if (temp_average <= SAFE_TO_TOUCH_TEMP) {
-				display_string("---");
+                if( temp_setpoint.value == 0 ) {
+                    display_string("FAN");
+				} else {
+                    display_string("---");
+                }                    
 			} else if (temp_average >= MAX_TEMP_ERR) {
 				// something might have gone terribly wrong
 				HEATER_OFF;
@@ -387,7 +402,7 @@ int main(void)
 					delay(1000);
 				}
 			} else if (abs((int16_t) (temp_average) - (int16_t) (temp_setpoint.value)) < TEMP_REACHED_MARGIN) {
-				display_number(temp_setpoint.value);	// avoid showing insignificant fluctuations on the display (annoying)
+				display_set_temp(temp_setpoint.value);	// avoid showing insignificant fluctuations on the display (annoying)
 			} else {
 				display_number(temp_average);
 				//display_number(temp_inst);
@@ -764,6 +779,14 @@ void display_char(uint8_t digit, uint8_t character)
 		PORTD = (uint8_t) (~0x10);	// '.'
 		break;
 	}
+}
+
+void display_set_temp(int16_t number) {
+    if( number == 0 ) {
+        display_string("FAN");
+    } else {
+        display_number(number);
+    }
 }
 
 void segm_test(void)

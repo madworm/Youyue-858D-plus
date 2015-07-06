@@ -40,6 +40,7 @@ void clear_dot(void);
 void clear_eeprom_saved_dot(void);
 void display_char(uint8_t digit, uint8_t character);
 void display_number(int16_t number);
+void display_set_temp(int16_t number);
 void display_string(const char *string);
 void eep_load(CPARAM * param);
 void eep_save(CPARAM * param);
