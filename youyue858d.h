@@ -121,7 +121,7 @@ uint8_t get_key_common( uint8_t key_mask );
 #define FAN_ON_TEMP 60
 
 #define FAN_SPEED_MIN_DEFAULT 150UL
-#define FAN_SPEED_MAX_DEFAULT 315UL
+#define FAN_SPEED_MAX_DEFAULT 360UL
 
 #define FAN_CURRENT_MIN_DEFAULT 30UL
 #define FAN_CURRENT_MAX_DEFAULT 71UL
