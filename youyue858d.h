@@ -33,6 +33,12 @@ typedef struct CPARAM {
 	uint8_t eep_addr_low;
 } CPARAM;
 
+typedef struct {
+    char digit[3];
+    bool dot[3];
+    bool changed:1;
+} framebuffer_t;
+
 void change_config_parameter(CPARAM * param, const char *string);
 void char_test(void);
 void clear_display(void);
@@ -53,6 +59,7 @@ void set_eeprom_saved_dot(void);
 void setup_858D(void);
 void setup_timer1_ctc(void);
 void show_firmware_version(void);
+void fb_update(void);
 #ifdef USE_WATCHDOG
 uint8_t _mcusr __attribute__ ((section(".noinit")));
 void watchdog_off_early(void) __attribute__ ((naked)) __attribute__ ((section(".init1")));

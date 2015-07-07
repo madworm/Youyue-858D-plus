@@ -133,7 +133,8 @@
 #include <EEPROM.h>
 #include "youyue858d.h"
 
-uint8_t framebuffer[6] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };	// dig0, dig1, dig2, dot0, dot1, dot2 - couting starts from right side
+uint8_t fb[3] = { 0xFF, 0xFF, 0xFF };	// dig0, dig1, dig2
+framebuffer_t framebuffer = {0x00, 0x00, 0x00, 0, 0, 0, 0};
 
 CPARAM p_gain = { 0, 999, P_GAIN_DEFAULT, P_GAIN_DEFAULT, 2, 3 };	// min, max, default, value, eep_addr_high, eep_addr_low
 CPARAM i_gain = { 0, 999, I_GAIN_DEFAULT, I_GAIN_DEFAULT, 4, 5 };
@@ -417,6 +418,11 @@ int main(void)
 		if ((millis() - temp_setpoint_saved_time) > 500) {
 			clear_eeprom_saved_dot();
 		}
+        
+        if(framebuffer.changed) {
+            fb_update();
+        }
+        
 #if defined(WATCHDOG_TEST) && defined(USE_WATCHDOG)
 		// watchdog test
 		if (temp_average > 100) {
@@ -508,17 +514,24 @@ void setup_858D(void)
 
 void clear_display(void)
 {
-	framebuffer[0] = 255;	// 255 --> 7-seg character off
-	framebuffer[1] = 255;
-	framebuffer[2] = 255;
-	framebuffer[3] = 255;
-	framebuffer[4] = 255;
-	framebuffer[5] = 255;
+    framebuffer.digit[0] = 255;
+    framebuffer.digit[1] = 255;
+    framebuffer.digit[2] = 255;
+    framebuffer.dot[0] = 0;
+    framebuffer.dot[1] = 0;
+    framebuffer.dot[2] = 0;
+    framebuffer.changed = 1;
+    fb_update();
 }
 
 void display_string(const char *string)
 {
-	clear_display();
+    framebuffer.digit[0] = 255;
+    framebuffer.digit[1] = 255;
+    framebuffer.digit[2] = 255;
+    framebuffer.dot[0] = 0;
+    framebuffer.dot[1] = 0;
+    framebuffer.dot[2] = 0;
 
 	uint8_t ctr;
 
@@ -527,9 +540,11 @@ void display_string(const char *string)
 		if (string[ctr] == '\0') {
 			break;
 		} else {
-			framebuffer[2 - ctr] = string[ctr];
+			framebuffer.digit[2 - ctr] = string[ctr];
 		}
 	}
+    framebuffer.changed = 1;
+    fb_update();
 }
 
 void change_config_parameter(CPARAM * param, const char *string)
@@ -632,42 +647,47 @@ void restore_default_conf(void)
 
 void set_dot(void)
 {
-	framebuffer[3] = '.';
+	framebuffer.dot[0] = 1;
+    framebuffer.changed = 1;
 }
 
 void clear_dot(void)
 {
-	framebuffer[3] = 255;
+    framebuffer.dot[0] = 0;
+    framebuffer.changed = 1;
 }
 
 void set_eeprom_saved_dot(void)
 {
-	framebuffer[5] = '.';
+	framebuffer.dot[1] = 1;
+    framebuffer.changed = 1;
 }
 
 void clear_eeprom_saved_dot(void)
 {
-	framebuffer[5] = 255;
+	framebuffer.dot[1] = 0;
+    framebuffer.changed = 1;
 }
 
 void display_number(int16_t number)
 {
 	if (number < 0) {
-		framebuffer[3] = '.';
-		framebuffer[4] = '.';
-		framebuffer[5] = '.';
+        framebuffer.dot[0] = 1;
+        framebuffer.dot[1] = 1;
+        framebuffer.dot[2] = 1;
 		number = -number;
 	} else {
 		// don't clear framebuffer[3], as this is the heater-indicator
-		framebuffer[4] = 255;
-		framebuffer[5] = 255;
+        framebuffer.dot[1] = 0;
+        framebuffer.dot[2] = 0;
 	}
 
-	framebuffer[0] = (uint8_t) (number % 10);
+	framebuffer.digit[0] = (uint8_t) (number % 10);
 	number /= 10;
-	framebuffer[1] = (uint8_t) (number % 10);
+	framebuffer.digit[1] = (uint8_t) (number % 10);
 	number /= 10;
-	framebuffer[2] = (uint8_t) (number % 10);
+	framebuffer.digit[2] = (uint8_t) (number % 10);
+    framebuffer.changed = 1;
 }
 
 void display_char(uint8_t digit, uint8_t character, uint8_t dot)
@@ -773,41 +793,9 @@ void display_char(uint8_t digit, uint8_t character, uint8_t dot)
 		break;
 	}
     
-    switch(dot) {
-        case 255:
-            break;
-        default:
-            portout &= (~0x10);	// '.'
-            break;
-    }
+    if( dot ) portout &= (~0x10);	// '.'
     
-    // all segments OFF (set HIGH, as current sinks)
-    SEGS_OFF;
-    PORTD = portout;
-
-    switch (digit) {
-        case 0:
-            DIG0_ON;	// turn on digit #0 (from right)
-            DIG1_OFF;
-            DIG2_OFF;
-            break;
-        case 1:
-            DIG1_ON;	// #1
-            DIG0_OFF;
-            DIG2_OFF;
-            break;
-        case 2:
-            DIG2_ON;	// #2
-            DIG0_OFF;
-            DIG1_OFF;
-            break;
-        default:
-            DIG0_OFF;
-            DIG1_OFF;
-            DIG2_OFF;
-            break;
-    }
-
+    fb[digit] = portout;
 }
 
 void display_set_temp(int16_t number) {
@@ -906,12 +894,14 @@ void fan_test(void)
 
 void show_firmware_version(void)
 {
-	framebuffer[0] = FW_MINOR_V_B;	// dig0
-	framebuffer[1] = FW_MINOR_V_A;	// dig1
-	framebuffer[2] = FW_MAJOR_V;	// dig2
-	framebuffer[3] = 255;	// dig0.dot
-	framebuffer[4] = 255;	// dig1.dot
-	framebuffer[5] = '.';	// dig2.dot
+	framebuffer.digit[0] = FW_MINOR_V_B;	// dig0
+	framebuffer.digit[1] = FW_MINOR_V_A;	// dig1
+	framebuffer.digit[2] = FW_MAJOR_V;	// dig2
+	framebuffer.dot[0] = 0;	// dig0.dot
+	framebuffer.dot[1] = 0;	// dig1.dot
+	framebuffer.dot[2] = 1;	// dig2.dot
+    framebuffer.changed = 1;
+    fb_update();
 	delay(2000);
 	clear_display();
 }
@@ -959,12 +949,41 @@ void setup_timer1_ctc(void)
 ISR(TIMER1_COMPB_vect) {
     static uint8_t digit = 0;
 
-    display_char(digit, framebuffer[digit], framebuffer[digit+3]);
     digit++;
 
     if (digit == 3) {
         digit = 0;
     }
+
+    // all segments OFF (set HIGH, as current sinks)
+    SEGS_OFF;
+
+    switch (digit) {
+        case 0:
+        PORTD = fb[0];
+        DIG0_ON;	// turn on digit #0 (from right)
+        DIG1_OFF;
+        DIG2_OFF;
+        break;
+        case 1:
+        PORTD = fb[1];
+        DIG1_ON;	// #1
+        DIG0_OFF;
+        DIG2_OFF;
+        break;
+        case 2:
+        PORTD = fb[2];
+        DIG2_ON;	// #2
+        DIG0_OFF;
+        DIG1_OFF;
+        break;
+        default:
+        DIG0_OFF;
+        DIG1_OFF;
+        DIG2_OFF;
+        break;
+    }
+
     
     
     if( OCR1B == 640 ) {
@@ -1083,3 +1102,17 @@ void watchdog_off_early(void)
 	wdt_disable();
 }
 #endif
+
+void fb_update() {
+    if( !framebuffer.changed ) return;
+        
+    uint8_t _sreg = SREG;	/* save SREG */
+    cli();			/* disable all interrupts while messing with the register setup */
+    
+    for(uint8_t digit = 0; digit < 3; digit++) {
+        display_char(digit, framebuffer.digit[digit], framebuffer.dot[digit]);
+    }
+    framebuffer.changed = 0;
+    
+    SREG = _sreg;
+}
