@@ -848,7 +848,7 @@ void char_test(void)
 void fan_test(void)
 {
     HEATER_OFF;
-    
+
     // if the wand is not in the cradle when powered up, go into a safe mode
     // and display an error
     while (!REEDSW_CLOSED) {
@@ -859,42 +859,41 @@ void fan_test(void)
         clear_display();
         delay(1000);
     }
-        
-	if (REEDSW_CLOSED) {
+
 
 #ifdef CURRENT_SENSE_MOD
-        uint16_t fan_current;
-		FAN_ON;
-		delay(3000);
-		fan_current = analogRead(A2);
+    uint16_t fan_current;
+	FAN_ON;
+	delay(3000);
+	fan_current = analogRead(A2);
 
-		if ((fan_current < (uint16_t) (fan_current_min.value)) || (fan_current > (uint16_t) (fan_current_max.value))) {
+	if ((fan_current < (uint16_t) (fan_current_min.value)) || (fan_current > (uint16_t) (fan_current_max.value))) {
 #else //CURRENT_SENSE_MOD
-        uint16_t fan_speed;
-        FAN_ON;
-        delay(3000);
-        fan_speed = analogRead(A5);
+    uint16_t fan_speed;
+    FAN_ON;
+    delay(3000);
+    fan_speed = analogRead(A5);
 
-        if ((fan_speed < (uint16_t) (fan_speed_min.value)) || (fan_speed > (uint16_t) (fan_speed_max.value))) {
+    if ((fan_speed < (uint16_t) (fan_speed_min.value)) || (fan_speed > (uint16_t) (fan_speed_max.value))) {
 #endif //CURRENT_SENSE_MOD
-			// the fan is not working as it should
-			FAN_OFF;
-			while (1) {
-				display_string("FAN");
-				delay(1000);
-                #ifdef CURRENT_SENSE_MOD
-				display_string("CUR");
-                #else //CURRENT_SENSE_MOD
-                display_string("SPD");
-                #endif //CURRENT_SENSE_MOD
-				delay(2000);
-				clear_display();
-				delay(1000);
-			}
-		}
-
+		// the fan is not working as it should
 		FAN_OFF;
+		while (1) {
+			display_string("FAN");
+			delay(1000);
+            #ifdef CURRENT_SENSE_MOD
+			display_string("CUR");
+            #else //CURRENT_SENSE_MOD
+            display_string("SPD");
+            #endif //CURRENT_SENSE_MOD
+			delay(2000);
+			clear_display();
+			delay(1000);
+		}
 	}
+
+	FAN_OFF;
+
 }
 
 
