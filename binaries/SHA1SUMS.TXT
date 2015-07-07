@@ -1,0 +1,3 @@
+e0c8657402ea59737be2349a7382aa4a8970f1fd  2015-07-07__commit-f535632f__ATmega168-8MHz-RC-osc__FUSES-0xE2-0xDD-0xFD__V1.41-WDT.hex
+f8fdc0ec9f6b51dd6d8e37f20e942154d0b30cbf  2015-07-07__commit-f535632f__ATmega328P-8MHz-RC-osc__AVRStudio-ProdFile__V1.41-WDT.elf
+eee25d8acd4a4abb8d371a37faec904b1118b6b6  2015-07-07__commit-f535632f__ATmega328P-8MHz-RC-osc__FUSES-0xE2-0xDF-0xFD__V1.41-WDT.hex
