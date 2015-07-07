@@ -2,7 +2,7 @@
  * This is a custom firmware for my 'Youyue 858D+' hot-air soldering station.
  * It may or may not be useful to you, always double check if you use it.
  *
- * V1.40
+ * V1.41
  *
  * 2015 - Robert Spitzenpfeil
  * 2015 - Moritz Augsburger
