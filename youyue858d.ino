@@ -937,7 +937,7 @@ void setup_timer1_ctc(void)
 
 	/* set top value for TCNT1 */
 	OCR1A = 640;    // key debouncing every 20.48ms
-    OCR1B = 64;     // display refresh about 80Hz: ISR every 2.048ms
+    OCR1B = 8;      // new segment every 256µs, complete display update every 6ms <=> 160Hz
 
 	/* enable COMPA and COMPB isr */
 	TIMSK1 |= _BV(OCIE1A) | _BV(OCIE1B);
@@ -951,45 +951,74 @@ ISR(TIMER1_COMPB_vect) {
 
     digit++;
 
-    if (digit == 3) {
+    if (digit == 24) {
         digit = 0;
+    }
+
+    uint8_t bm;
+    // explicit switch is faster than variable shifting
+    switch( digit & 0x07 ) {
+        case 0:
+            bm = ~(1<<0);
+            break;
+        case 1:
+            bm = ~(1<<1);
+            break;
+        case 2:
+            bm = ~(1<<2);
+            break;
+        case 3:
+            bm = ~(1<<3);
+            break;
+        case 4:
+            bm = ~(1<<4);
+            break;
+        case 5:
+            bm = ~(1<<5);
+            break;
+        case 6:
+            bm = ~(1<<6);
+            break;
+        case 7:
+            bm = (uint8_t) ~(1<<7);
+            break;
     }
 
     // all segments OFF (set HIGH, as current sinks)
     SEGS_OFF;
 
-    switch (digit) {
+    switch (digit/8) {
         case 0:
-        PORTD = fb[0];
-        DIG0_ON;	// turn on digit #0 (from right)
-        DIG1_OFF;
-        DIG2_OFF;
-        break;
+            DIG0_ON;	// turn on digit #0 (from right)
+            PORTD = fb[0] | bm;
+            DIG1_OFF;
+            DIG2_OFF;
+            break;
         case 1:
-        PORTD = fb[1];
-        DIG1_ON;	// #1
-        DIG0_OFF;
-        DIG2_OFF;
-        break;
+            DIG1_ON;	// #1
+            PORTD = fb[1]| bm;
+            DIG0_OFF;
+            DIG2_OFF;
+            break;
         case 2:
-        PORTD = fb[2];
-        DIG2_ON;	// #2
-        DIG0_OFF;
-        DIG1_OFF;
-        break;
+            DIG2_ON;	// #2
+            PORTD = fb[2]| bm;
+            DIG0_OFF;
+            DIG1_OFF;
+            break;
         default:
-        DIG0_OFF;
-        DIG1_OFF;
-        DIG2_OFF;
-        break;
+            DIG0_OFF;
+            DIG1_OFF;
+            DIG2_OFF;
+            break;
     }
 
     
     
     if( OCR1B == 640 ) {
-        OCR1B = 64;
+        OCR1B = 8;
     } else {
-        OCR1B += 64;
+        OCR1B += 8;
     }    
 }
 
