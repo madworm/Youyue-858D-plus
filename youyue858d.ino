@@ -1030,6 +1030,7 @@ ISR(TIMER1_COMPB_vect) {
 
 ISR(TIMER1_COMPA_vect)
 {   
+    // explained in https://www.mikrocontroller.net/articles/Entprellung#Komfortroutine_.28C_f.C3.BCr_AVR.29
     static uint8_t ct0, ct1, rpt;
     uint8_t i;
     
