@@ -479,8 +479,10 @@ void setup_858D(void)
 		restore_default_conf();
 	} else if( SW0_PRESSED ) {
         display_string("FAN");
+        fb_update();
         delay(1000);
         display_string("TST");
+        fb_update();
         delay(1000);
         FAN_ON;
         while (1) {
@@ -492,6 +494,7 @@ void setup_858D(void)
             fan = analogRead(A5);
             #endif //CURRENT_SENSE_MOD
             display_number(fan);
+            fb_update();
         }
     } 
          
@@ -576,11 +579,14 @@ void change_config_parameter(CPARAM * param, const char *string)
         }            
 
 		display_number(param->value);
+        fb_update();
 	}
 	set_eeprom_saved_dot();
+    fb_update();
 	eep_save(param);
 	delay(1000);
 	clear_eeprom_saved_dot();
+    fb_update();
 }
 
 void eep_save(CPARAM * param)
