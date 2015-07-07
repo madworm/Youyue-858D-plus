@@ -419,9 +419,7 @@ int main(void)
 			clear_eeprom_saved_dot();
 		}
         
-        if(framebuffer.changed) {
-            fb_update();
-        }
+        fb_update();
         
 #if defined(WATCHDOG_TEST) && defined(USE_WATCHDOG)
 		// watchdog test
@@ -479,10 +477,8 @@ void setup_858D(void)
 		restore_default_conf();
 	} else if( SW0_PRESSED ) {
         display_string("FAN");
-        fb_update();
         delay(1000);
         display_string("TST");
-        fb_update();
         delay(1000);
         FAN_ON;
         while (1) {
@@ -494,7 +490,6 @@ void setup_858D(void)
             fan = analogRead(A5);
             #endif //CURRENT_SENSE_MOD
             display_number(fan);
-            fb_update();
         }
     } 
          
@@ -579,14 +574,11 @@ void change_config_parameter(CPARAM * param, const char *string)
         }            
 
 		display_number(param->value);
-        fb_update();
 	}
 	set_eeprom_saved_dot();
-    fb_update();
 	eep_save(param);
 	delay(1000);
 	clear_eeprom_saved_dot();
-    fb_update();
 }
 
 void eep_save(CPARAM * param)
@@ -655,24 +647,28 @@ void set_dot(void)
 {
 	framebuffer.dot[0] = 1;
     framebuffer.changed = 1;
+    fb_update();
 }
 
 void clear_dot(void)
 {
     framebuffer.dot[0] = 0;
     framebuffer.changed = 1;
+    fb_update();
 }
 
 void set_eeprom_saved_dot(void)
 {
 	framebuffer.dot[1] = 1;
     framebuffer.changed = 1;
+    fb_update();
 }
 
 void clear_eeprom_saved_dot(void)
 {
 	framebuffer.dot[1] = 0;
     framebuffer.changed = 1;
+    fb_update();
 }
 
 void display_number(int16_t number)
@@ -694,6 +690,7 @@ void display_number(int16_t number)
 	number /= 10;
 	framebuffer.digit[2] = (uint8_t) (number % 10);
     framebuffer.changed = 1;
+    fb_update();
 }
 
 void display_char(uint8_t digit, uint8_t character, uint8_t dot)
@@ -908,7 +905,6 @@ void show_firmware_version(void)
     framebuffer.changed = 1;
     fb_update();
 	delay(2000);
-	clear_display();
 }
 
 void setup_timer1_ctc(void)
@@ -1142,7 +1138,7 @@ void fb_update() {
     if( !framebuffer.changed ) return;
         
     uint8_t _sreg = SREG;	/* save SREG */
-    cli();			/* disable all interrupts while messing with the register setup */
+    cli();			        /* disable all interrupts to avoid half-updated screens */
     
     for(uint8_t digit = 0; digit < 3; digit++) {
         display_char(digit, framebuffer.digit[digit], framebuffer.dot[digit]);
