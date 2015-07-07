@@ -114,9 +114,9 @@ uint8_t get_key_common( uint8_t key_mask );
 #define I_GAIN_DEFAULT 15
 #define D_GAIN_DEFAULT 500
 #define I_THRESH_DEFAULT 45
-#define P_GAIN_SCALING 100
-#define I_GAIN_SCALING 10000
-#define D_GAIN_SCALING 25
+#define P_GAIN_SCALING 100.0
+#define I_GAIN_SCALING 10000.0
+#define D_GAIN_SCALING 25.0
 
 #define TEMP_OFFSET_CORR_DEFAULT 33
 #define TEMP_SETPOINT_DEFAULT 75
