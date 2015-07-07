@@ -933,9 +933,9 @@ void setup_timer1_ctc(void)
 	uint8_t _sreg = SREG;	/* save SREG */
 	cli();			/* disable all interrupts while messing with the register setup */
 
-	/* set prescaler to 64 */
-	TCCR1B |= (_BV(CS11) | _BV(CS10));
-	TCCR1B &= ~(_BV(CS12));
+	/* set prescaler to 256 */
+	TCCR1B &= ~(_BV(CS11) | _BV(CS10));
+	TCCR1B |= _BV(CS12);
 
 	/* set WGM mode 4: CTC using OCR1A */
 	TCCR1A &= ~(_BV(WGM10) | _BV(WGM11));
@@ -946,27 +946,38 @@ void setup_timer1_ctc(void)
 	TCCR1A &= ~(_BV(COM1A1) | _BV(COM1A0) | _BV(COM1B1) | _BV(COM1B0));
 
 	/* set top value for TCNT1 */
-	OCR1A = 256;		// display refresh about 80Hz = 12.5ms
+	OCR1A = 640;    // key debouncing every 20.48ms
+    OCR1B = 64;     // display refresh about 80Hz: ISR every 2.048ms
 
-	/* enable COMPA isr */
-	TIMSK1 |= _BV(OCIE1A);
+	/* enable COMPA and COMPB isr */
+	TIMSK1 |= _BV(OCIE1A) | _BV(OCIE1B);
 
 	/* restore SREG with global interrupt flag */
 	SREG = _sreg;
 }
 
+ISR(TIMER1_COMPB_vect) {
+    static uint8_t digit = 0;
+
+    display_char(digit, framebuffer[digit], framebuffer[digit+3]);
+    digit++;
+
+    if (digit == 3) {
+        digit = 0;
+    }
+    
+    
+    if( OCR1B == 640 ) {
+        OCR1B = 64;
+    } else {
+        OCR1B += 64;
+    }    
+}
+
 ISR(TIMER1_COMPA_vect)
-{
-	static uint8_t digit = 0;
+{   
     static uint8_t ct0, ct1, rpt;
     uint8_t i;
-
-	display_char(digit, framebuffer[digit], framebuffer[digit+3]);
-	digit++;
-
-	if (digit == 3) {
-		digit = 0;
-	}
     
     i = key_state ^ ~KEY_PIN;                       // key changed ?
     ct0 = ~( ct0 & i );                             // reset or count ct0

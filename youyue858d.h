@@ -139,7 +139,7 @@ uint8_t get_key_common( uint8_t key_mask );
 #define ALL_KEYS        (1<<KEY_DOWN | 1<<KEY_UP)
 
 #define REPEAT_MASK     (1<<KEY_DOWN | 1<<KEY_UP)       // repeat: key1, key2
-#define REPEAT_START    255                        // after 500ms
-#define REPEAT_NEXT     50                        // every 200ms
+#define REPEAT_START    25                        // after 500ms
+#define REPEAT_NEXT     15                        // every 200ms
 
 #endif // youyoue858d_h
