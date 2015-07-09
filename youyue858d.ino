@@ -231,8 +231,8 @@ int main(void)
 			temp_inst = 0;
 		}
 
-        // pid loop
-        if( fan_only.value == 1 ) {
+        // pid loop / heater handling
+        if( fan_only.value == 1 || REEDSW_CLOSED ) {
             HEATER_OFF;
             heater_start_time = millis();
             clear_dot();
@@ -278,11 +278,6 @@ int main(void)
 			if (heater_ctr == PWM_CYCLES) {
 				heater_ctr = 0;
 			}
-
-		} else if (REEDSW_CLOSED) {
-			HEATER_OFF;
-			heater_start_time = millis();
-			clear_dot();
 		} else {
 			HEATER_OFF;
 			clear_dot();
