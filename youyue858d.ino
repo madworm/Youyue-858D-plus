@@ -590,8 +590,8 @@ void eep_save(CPARAM * param)
 		// reset to sensible minimum
 		param->value = param->value_default;
 	}
-	EEPROM.write(param->eep_addr_high, highByte(param->value));
-	EEPROM.write(param->eep_addr_low, lowByte(param->value));
+	EEPROM.update(param->eep_addr_high, highByte(param->value));
+	EEPROM.update(param->eep_addr_low, lowByte(param->value));
 }
 
 void eep_load(CPARAM * param)
