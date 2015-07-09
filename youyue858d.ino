@@ -427,7 +427,7 @@ int main(void)
                     display_number(temp_average);
                 }                               
 			} else if (abs((int16_t) (temp_average) - (int16_t) (temp_setpoint.value)) < TEMP_REACHED_MARGIN) {
-				display_set_temp(temp_setpoint.value);	// avoid showing insignificant fluctuations on the display (annoying)
+				display_number(temp_setpoint.value);	// avoid showing insignificant fluctuations on the display (annoying)
 			} else {
 				display_number(temp_average);
 			}
@@ -820,14 +820,6 @@ void display_char(uint8_t digit, uint8_t character, uint8_t dot)
     if( dot ) portout &= (~0x10);	// '.'
     
     fb[digit] = portout;
-}
-
-void display_set_temp(int16_t number) {
-    if( fan_only.value == 1 ) {
-        display_string("FAN");
-    } else {
-        display_number(number);
-    }
 }
 
 void segm_test(void)
