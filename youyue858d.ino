@@ -144,6 +144,7 @@ CPARAM temp_offset_corr = { -100, 100, TEMP_OFFSET_CORR_DEFAULT, TEMP_OFFSET_COR
 CPARAM temp_setpoint = { 50, 500, TEMP_SETPOINT_DEFAULT, TEMP_SETPOINT_DEFAULT, 12, 13 };
 CPARAM temp_averages = { 100, 999, TEMP_AVERAGES_DEFAULT, TEMP_AVERAGES_DEFAULT, 14, 15 };
 CPARAM slp_timeout = { 0, 30, SLP_TIMEOUT_DEFAULT, SLP_TIMEOUT_DEFAULT, 16, 17 };
+CPARAM fan_only = {0, 1, 0, 0, 26, 27};
 
 #ifdef CURRENT_SENSE_MOD
 CPARAM fan_current_min = { 0, 999, FAN_CURRENT_MIN_DEFAULT, FAN_CURRENT_MIN_DEFAULT, 22, 23 };
@@ -156,6 +157,8 @@ CPARAM fan_speed_max = { 300, 400, FAN_SPEED_MAX_DEFAULT, FAN_SPEED_MAX_DEFAULT,
 volatile uint8_t key_state;     // debounced and inverted key state: bit = 1: key pressed
 volatile uint8_t key_press;     // key press detect
 volatile uint8_t key_rpt;       // key long press and repeat
+
+volatile uint8_t display_blink;
 
 int main(void)
 {
@@ -228,7 +231,8 @@ int main(void)
 			temp_inst = 0;
 		}
 
-        if( temp_setpoint.value == 0 ) {
+        // pid loop
+        if( fan_only.value == 1 ) {
             HEATER_OFF;
             heater_start_time = millis();
             clear_dot();
@@ -306,9 +310,7 @@ int main(void)
 
         if (get_key_short(1<<KEY_UP)) {
             button_input_time = millis();
-            if( temp_setpoint.value == 0 ) {
-                temp_setpoint.value = temp_setpoint.value_min;
-            } else if (temp_setpoint.value < temp_setpoint.value_max) {
+            if (temp_setpoint.value < temp_setpoint.value_max) {
                 temp_setpoint.value++;
             }
             temp_setpoint_saved = 0;
@@ -316,22 +318,15 @@ int main(void)
             button_input_time = millis();
             if (temp_setpoint.value > temp_setpoint.value_min) {
                 temp_setpoint.value--;
-                temp_setpoint_saved = 0;
-            } else if ( temp_setpoint.value == temp_setpoint.value_min ) {
-                temp_setpoint.value = 0;
-                // never save fan only (will also reset temp to default...
-                temp_setpoint_saved = 1;
             }
+            temp_setpoint_saved = 0;
         } else if (get_key_long_r(1<<KEY_UP) || get_key_rpt_l(1<<KEY_UP)) {
 			button_input_time = millis();
-            if( temp_setpoint.value == 0 ) {
-                temp_setpoint.value = temp_setpoint.value_min;
-            } else if (temp_setpoint.value < (temp_setpoint.value_max - 10)) {
+            if (temp_setpoint.value < (temp_setpoint.value_max - 10)) {
 				temp_setpoint.value += 10;
 			} else {
                 temp_setpoint.value = temp_setpoint.value_max;
-            }
-                
+            }    
             temp_setpoint_saved = 0;
 
 		} else if (get_key_long_r(1<<KEY_DOWN) || get_key_rpt_l(1<<KEY_DOWN)) {
@@ -344,25 +339,35 @@ int main(void)
             }
 
             temp_setpoint_saved = 0;
-        } else if ( get_key_common(1<<KEY_UP|1<<KEY_DOWN)) {
-            HEATER_OFF;
+        } else if ( get_key_common(1<<KEY_UP|1<<KEY_DOWN) ) {
+            HEATER_OFF; // security reasons, delay below!
             #ifdef USE_WATCHDOG
             watchdog_off();
             #endif
-            change_config_parameter(&p_gain, "P");
-            change_config_parameter(&i_gain, "I");
-            change_config_parameter(&d_gain, "D");
-            change_config_parameter(&i_thresh, "ITH");
-            change_config_parameter(&temp_offset_corr, "TOF");
-            change_config_parameter(&temp_averages, "AVG");
-            change_config_parameter(&slp_timeout, "SLP");
-            #ifdef CURRENT_SENSE_MOD
-            change_config_parameter(&fan_current_min, "FCL");
-            change_config_parameter(&fan_current_max, "FCH");
-            #else
-            change_config_parameter(&fan_speed_min, "FSL");
-            change_config_parameter(&fan_speed_max, "FSH");
-            #endif
+            delay(REPEAT_START*21);
+            if ( get_key_rpt_l(1<<KEY_UP|1<<KEY_DOWN) ) {
+                change_config_parameter(&p_gain, "P");
+                change_config_parameter(&i_gain, "I");
+                change_config_parameter(&d_gain, "D");
+                change_config_parameter(&i_thresh, "ITH");
+                change_config_parameter(&temp_offset_corr, "TOF");
+                change_config_parameter(&temp_averages, "AVG");
+                change_config_parameter(&slp_timeout, "SLP");
+                #ifdef CURRENT_SENSE_MOD
+                change_config_parameter(&fan_current_min, "FCL");
+                change_config_parameter(&fan_current_max, "FCH");
+                #else
+                change_config_parameter(&fan_speed_min, "FSL");
+                change_config_parameter(&fan_speed_max, "FSH");
+                #endif
+            } else {
+                fan_only.value ^= 0x01;
+                temp_setpoint_saved = 0;
+                if( fan_only.value == 0) {
+                    button_input_time = millis(); // show set temp after disabling fan only mode
+                }
+                display_blink = 0;  // make sure we start displaying "FAN" or set temp
+            }
             #ifdef USE_WATCHDOG
             watchdog_on();
             #endif
@@ -374,10 +379,11 @@ int main(void)
 			if (temp_setpoint_saved == 0) {
 			    set_eeprom_saved_dot();
 			    eep_save(&temp_setpoint);
+                eep_save(&fan_only);
 			    temp_setpoint_saved_time = millis();
 				temp_setpoint_saved = 1;
 			} else if (temp_average <= SAFE_TO_TOUCH_TEMP) {
-                if( temp_setpoint.value == 0 ) {
+                if( fan_only.value == 1 ) {
                     display_string("FAN");
 				} else {
                     display_string("---");
@@ -407,11 +413,16 @@ int main(void)
 					clear_display();
 					delay(1000);
 				}
+            } else if ( fan_only.value == 1 ) {
+                if(display_blink < 20 ) {
+                    display_string("FAN");
+                } else {
+                    display_number(temp_average);
+                }                               
 			} else if (abs((int16_t) (temp_average) - (int16_t) (temp_setpoint.value)) < TEMP_REACHED_MARGIN) {
 				display_set_temp(temp_setpoint.value);	// avoid showing insignificant fluctuations on the display (annoying)
 			} else {
 				display_number(temp_average);
-				//display_number(temp_inst);
 			}
 		}
 
@@ -501,6 +512,7 @@ void setup_858D(void)
 	eep_load(&temp_setpoint);
 	eep_load(&temp_averages);
 	eep_load(&slp_timeout);
+    eep_load(&fan_only);
 #ifdef CURRENT_SENSE_MOD
 	eep_load(&fan_current_min);
 	eep_load(&fan_current_max);
@@ -618,6 +630,7 @@ void restore_default_conf(void)
 	temp_setpoint.value = temp_setpoint.value_default;
 	temp_averages.value = temp_averages.value_default;
 	slp_timeout.value = slp_timeout.value_default;
+    fan_only.value = 0;
 #ifdef CURRENT_SENSE_MOD
 	fan_current_min.value = fan_current_min.value_default;
 	fan_current_max.value = fan_current_max.value_default;
@@ -634,6 +647,7 @@ void restore_default_conf(void)
 	eep_save(&temp_setpoint);
 	eep_save(&temp_averages);
 	eep_save(&slp_timeout);
+    eep_save(&fan_only);
 #ifdef CURRENT_SENSE_MOD
 	eep_save(&fan_current_min);
 	eep_save(&fan_current_max);
@@ -802,7 +816,7 @@ void display_char(uint8_t digit, uint8_t character, uint8_t dot)
 }
 
 void display_set_temp(int16_t number) {
-    if( number == 0 ) {
+    if( fan_only.value == 1 ) {
         display_string("FAN");
     } else {
         display_number(number);
@@ -856,7 +870,6 @@ void fan_test(void)
         clear_display();
         delay(1000);
     }
-
 
 #ifdef CURRENT_SENSE_MOD
     uint16_t fan_current;
@@ -1043,6 +1056,7 @@ ISR(TIMER1_COMPA_vect)
         key_rpt |= key_state & REPEAT_MASK;
     }
     
+    if(++display_blink > 50) display_blink = 0;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -1108,7 +1122,6 @@ uint8_t get_key_rpt_l( uint8_t key_mask ) {      // if long function needed
 uint8_t get_key_common( uint8_t key_mask ){
     return get_key_press((key_press & key_mask) == key_mask ? key_mask : 0);
 }
-
 
 #ifdef USE_WATCHDOG
 void watchdog_off(void)
