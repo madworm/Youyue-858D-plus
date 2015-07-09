@@ -370,6 +370,35 @@ int main(void)
             #endif
         }    
         
+        // security first!
+        if (temp_average >= MAX_TEMP_ERR) {
+        	// something might have gone terribly wrong
+        	HEATER_OFF;
+        	FAN_ON;
+        	#ifdef USE_WATCHDOG
+        	watchdog_off();
+        	#endif
+        	while (1) {
+            	// stay here until the power is cycled
+            	// make sure the user notices the error by blinking "FAN"
+            	// and don't resume operation if the error goes away on its own
+            	//
+            	// possible reasons to be here:
+            	//
+            	// * wand is not connected (false temperature reading)
+            	// * thermo couple has failed
+            	// * true over-temperature condition
+            	//
+            	display_string("*C");
+            	delay(1000);
+            	display_string("ERR");
+            	delay(2000);
+            	clear_display();
+            	delay(1000);
+        	}
+    	}
+        
+        
         // display output
 		if ((millis() - button_input_time) < SHOW_SETPOINT_TIMEOUT) {
             if ( display_blink < 5 ) {
@@ -390,31 +419,6 @@ int main(void)
 				} else {
                     display_string("---");
                 }                    
-			} else if (temp_average >= MAX_TEMP_ERR) {
-				// something might have gone terribly wrong
-				HEATER_OFF;
-				FAN_ON;
-#ifdef USE_WATCHDOG
-				watchdog_off();
-#endif
-				while (1) {
-					// stay here until the power is cycled
-					// make sure the user notices the error by blinking "FAN"
-					// and don't resume operation if the error goes away on its own
-					//
-					// possible reasons to be here:
-					//
-					// * wand is not connected (false temperature reading)
-					// * thermo couple has failed
-					// * true over-temperature condition
-					//
-					display_string("*C");
-					delay(1000);
-					display_string("ERR");
-					delay(2000);
-					clear_display();
-					delay(1000);
-				}
             } else if ( fan_only.value == 1 ) {
                 if(display_blink < 20 ) {
                     display_string("FAN");
