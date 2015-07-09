@@ -300,6 +300,7 @@ int main(void)
 			temp_avg_ctr = 0;
 		}
 
+        // fan/cradle handling
 		if (temp_average >= FAN_ON_TEMP) {
 			FAN_ON;
 		} else if (REEDSW_CLOSED && (temp_average <= FAN_OFF_TEMP)) {
@@ -308,6 +309,7 @@ int main(void)
 			FAN_ON;
 		}
 
+        // menu key handling
         if (get_key_short(1<<KEY_UP)) {
             button_input_time = millis();
             if (temp_setpoint.value < temp_setpoint.value_max) {
@@ -371,10 +373,15 @@ int main(void)
             #ifdef USE_WATCHDOG
             watchdog_on();
             #endif
-        }
-
+        }    
+        
+        // display output
 		if ((millis() - button_input_time) < SHOW_SETPOINT_TIMEOUT) {
-			display_set_temp(temp_setpoint.value);	// show temperature setpoint
+            if ( display_blink < 5 ) {
+                clear_display();
+            } else {                
+			    display_number(temp_setpoint.value);	// show temperature setpoint
+            }                
 		} else {
 			if (temp_setpoint_saved == 0) {
 			    set_eeprom_saved_dot();
