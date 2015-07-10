@@ -134,7 +134,7 @@
 #include "youyue858d.h"
 
 uint8_t fb[3] = { 0xFF, 0xFF, 0xFF };	// dig0, dig1, dig2
-framebuffer_t framebuffer = {0x00, 0x00, 0x00, 0, 0, 0, 0};
+framebuffer_t framebuffer = { 0x00, 0x00, 0x00, 0, 0, 0, 0 };
 
 CPARAM p_gain = { 0, 999, P_GAIN_DEFAULT, P_GAIN_DEFAULT, 2, 3 };	// min, max, default, value, eep_addr_high, eep_addr_low
 CPARAM i_gain = { 0, 999, I_GAIN_DEFAULT, I_GAIN_DEFAULT, 4, 5 };
@@ -144,7 +144,7 @@ CPARAM temp_offset_corr = { -100, 100, TEMP_OFFSET_CORR_DEFAULT, TEMP_OFFSET_COR
 CPARAM temp_setpoint = { 50, 500, TEMP_SETPOINT_DEFAULT, TEMP_SETPOINT_DEFAULT, 12, 13 };
 CPARAM temp_averages = { 100, 999, TEMP_AVERAGES_DEFAULT, TEMP_AVERAGES_DEFAULT, 14, 15 };
 CPARAM slp_timeout = { 0, 30, SLP_TIMEOUT_DEFAULT, SLP_TIMEOUT_DEFAULT, 16, 17 };
-CPARAM fan_only = {0, 1, 0, 0, 26, 27};
+CPARAM fan_only = { 0, 1, 0, 0, 26, 27 };
 
 #ifdef CURRENT_SENSE_MOD
 CPARAM fan_current_min = { 0, 999, FAN_CURRENT_MIN_DEFAULT, FAN_CURRENT_MIN_DEFAULT, 22, 23 };
@@ -154,9 +154,9 @@ CPARAM fan_speed_min = { 120, 180, FAN_SPEED_MIN_DEFAULT, FAN_SPEED_MIN_DEFAULT,
 CPARAM fan_speed_max = { 300, 400, FAN_SPEED_MAX_DEFAULT, FAN_SPEED_MAX_DEFAULT, 20, 21 };
 #endif
 
-volatile uint8_t key_state;     // debounced and inverted key state: bit = 1: key pressed
-volatile uint8_t key_press;     // key press detect
-volatile uint8_t key_rpt;       // key long press and repeat
+volatile uint8_t key_state;	// debounced and inverted key state: bit = 1: key pressed
+volatile uint8_t key_press;	// key press detect
+volatile uint8_t key_rpt;	// key long press and repeat
 
 volatile uint8_t display_blink;
 
@@ -230,14 +230,13 @@ int main(void)
 		if (temp_inst < 0) {
 			temp_inst = 0;
 		}
-
-        // pid loop / heater handling
-        if( fan_only.value == 1 || REEDSW_CLOSED ) {
-            HEATER_OFF;
-            heater_start_time = millis();
-            clear_dot();
-        } else if (REEDSW_OPEN && (temp_setpoint.value >= temp_setpoint.value_min)
-		    && (temp_average < MAX_TEMP_ERR) && ((millis() - heater_start_time) < ((uint32_t) (slp_timeout.value) * 60 * 1000))) {
+		// pid loop / heater handling
+		if (fan_only.value == 1 || REEDSW_CLOSED) {
+			HEATER_OFF;
+			heater_start_time = millis();
+			clear_dot();
+		} else if (REEDSW_OPEN && (temp_setpoint.value >= temp_setpoint.value_min)
+			   && (temp_average < MAX_TEMP_ERR) && ((millis() - heater_start_time) < ((uint32_t) (slp_timeout.value) * 60 * 1000))) {
 
 			FAN_ON;
 
@@ -294,8 +293,7 @@ int main(void)
 			temp_accu = 0;
 			temp_avg_ctr = 0;
 		}
-
-        // fan/cradle handling
+		// fan/cradle handling
 		if (temp_average >= FAN_ON_TEMP) {
 			FAN_ON;
 		} else if (REEDSW_CLOSED && (temp_average <= FAN_OFF_TEMP)) {
@@ -303,128 +301,125 @@ int main(void)
 		} else if (REEDSW_OPEN) {
 			FAN_ON;
 		}
-
-        // menu key handling
-        if (get_key_short(1<<KEY_UP)) {
-            button_input_time = millis();
-            if (temp_setpoint.value < temp_setpoint.value_max) {
-                temp_setpoint.value++;
-            }
-            temp_setpoint_saved = 0;
-        } else if (get_key_short(1<<KEY_DOWN)) {
-            button_input_time = millis();
-            if (temp_setpoint.value > temp_setpoint.value_min) {
-                temp_setpoint.value--;
-            }
-            temp_setpoint_saved = 0;
-        } else if (get_key_long_r(1<<KEY_UP) || get_key_rpt_l(1<<KEY_UP)) {
+		// menu key handling
+		if (get_key_short(1 << KEY_UP)) {
 			button_input_time = millis();
-            if (temp_setpoint.value < (temp_setpoint.value_max - 10)) {
+			if (temp_setpoint.value < temp_setpoint.value_max) {
+				temp_setpoint.value++;
+			}
+			temp_setpoint_saved = 0;
+		} else if (get_key_short(1 << KEY_DOWN)) {
+			button_input_time = millis();
+			if (temp_setpoint.value > temp_setpoint.value_min) {
+				temp_setpoint.value--;
+			}
+			temp_setpoint_saved = 0;
+		} else if (get_key_long_r(1 << KEY_UP) || get_key_rpt_l(1 << KEY_UP)) {
+			button_input_time = millis();
+			if (temp_setpoint.value < (temp_setpoint.value_max - 10)) {
 				temp_setpoint.value += 10;
 			} else {
-                temp_setpoint.value = temp_setpoint.value_max;
-            }    
-            temp_setpoint_saved = 0;
+				temp_setpoint.value = temp_setpoint.value_max;
+			}
+			temp_setpoint_saved = 0;
 
-		} else if (get_key_long_r(1<<KEY_DOWN) || get_key_rpt_l(1<<KEY_DOWN)) {
+		} else if (get_key_long_r(1 << KEY_DOWN) || get_key_rpt_l(1 << KEY_DOWN)) {
 			button_input_time = millis();
 
 			if (temp_setpoint.value > (temp_setpoint.value_min + 10)) {
-				temp_setpoint.value -= 10;	
-			}   else {
+				temp_setpoint.value -= 10;
+			} else {
 				temp_setpoint.value = temp_setpoint.value_min;
-            }
+			}
 
-            temp_setpoint_saved = 0;
-        } else if ( get_key_common(1<<KEY_UP|1<<KEY_DOWN) ) {
-            HEATER_OFF; // security reasons, delay below!
-            #ifdef USE_WATCHDOG
-            watchdog_off();
-            #endif
-            delay(REPEAT_START*21);
-            if ( get_key_rpt_l(1<<KEY_UP|1<<KEY_DOWN) ) {
-                change_config_parameter(&p_gain, "P");
-                change_config_parameter(&i_gain, "I");
-                change_config_parameter(&d_gain, "D");
-                change_config_parameter(&i_thresh, "ITH");
-                change_config_parameter(&temp_offset_corr, "TOF");
-                change_config_parameter(&temp_averages, "AVG");
-                change_config_parameter(&slp_timeout, "SLP");
-                #ifdef CURRENT_SENSE_MOD
-                change_config_parameter(&fan_current_min, "FCL");
-                change_config_parameter(&fan_current_max, "FCH");
-                #else
-                change_config_parameter(&fan_speed_min, "FSL");
-                change_config_parameter(&fan_speed_max, "FSH");
-                #endif
-            } else {
-                fan_only.value ^= 0x01;
-                temp_setpoint_saved = 0;
-                if( fan_only.value == 0) {
-                    button_input_time = millis(); // show set temp after disabling fan only mode
-                }
-                display_blink = 0;  // make sure we start displaying "FAN" or set temp
-            }
-            #ifdef USE_WATCHDOG
-            watchdog_on();
-            #endif
-        }    
-        
-        // security first!
-        if (temp_average >= MAX_TEMP_ERR) {
-        	// something might have gone terribly wrong
-        	HEATER_OFF;
-        	FAN_ON;
-        	#ifdef USE_WATCHDOG
-        	watchdog_off();
-        	#endif
-        	while (1) {
-            	// stay here until the power is cycled
-            	// make sure the user notices the error by blinking "FAN"
-            	// and don't resume operation if the error goes away on its own
-            	//
-            	// possible reasons to be here:
-            	//
-            	// * wand is not connected (false temperature reading)
-            	// * thermo couple has failed
-            	// * true over-temperature condition
-            	//
-            	display_string("*C");
-            	delay(1000);
-            	display_string("ERR");
-            	delay(2000);
-            	clear_display();
-            	delay(1000);
-        	}
-    	}
-        
-        
-        // display output
+			temp_setpoint_saved = 0;
+		} else if (get_key_common(1 << KEY_UP | 1 << KEY_DOWN)) {
+			HEATER_OFF;	// security reasons, delay below!
+#ifdef USE_WATCHDOG
+			watchdog_off();
+#endif
+			delay(REPEAT_START * 21);
+			if (get_key_rpt_l(1 << KEY_UP | 1 << KEY_DOWN)) {
+				change_config_parameter(&p_gain, "P");
+				change_config_parameter(&i_gain, "I");
+				change_config_parameter(&d_gain, "D");
+				change_config_parameter(&i_thresh, "ITH");
+				change_config_parameter(&temp_offset_corr, "TOF");
+				change_config_parameter(&temp_averages, "AVG");
+				change_config_parameter(&slp_timeout, "SLP");
+#ifdef CURRENT_SENSE_MOD
+				change_config_parameter(&fan_current_min, "FCL");
+				change_config_parameter(&fan_current_max, "FCH");
+#else
+				change_config_parameter(&fan_speed_min, "FSL");
+				change_config_parameter(&fan_speed_max, "FSH");
+#endif
+			} else {
+				fan_only.value ^= 0x01;
+				temp_setpoint_saved = 0;
+				if (fan_only.value == 0) {
+					button_input_time = millis();	// show set temp after disabling fan only mode
+				}
+				display_blink = 0;	// make sure we start displaying "FAN" or set temp
+			}
+#ifdef USE_WATCHDOG
+			watchdog_on();
+#endif
+		}
+		// security first!
+		if (temp_average >= MAX_TEMP_ERR) {
+			// something might have gone terribly wrong
+			HEATER_OFF;
+			FAN_ON;
+#ifdef USE_WATCHDOG
+			watchdog_off();
+#endif
+			while (1) {
+				// stay here until the power is cycled
+				// make sure the user notices the error by blinking "FAN"
+				// and don't resume operation if the error goes away on its own
+				//
+				// possible reasons to be here:
+				//
+				// * wand is not connected (false temperature reading)
+				// * thermo couple has failed
+				// * true over-temperature condition
+				//
+				display_string("*C");
+				delay(1000);
+				display_string("ERR");
+				delay(2000);
+				clear_display();
+				delay(1000);
+			}
+		}
+
+		// display output
 		if ((millis() - button_input_time) < SHOW_SETPOINT_TIMEOUT) {
-            if ( display_blink < 5 ) {
-                clear_display();
-            } else {                
-			    display_number(temp_setpoint.value);	// show temperature setpoint
-            }                
+			if (display_blink < 5) {
+				clear_display();
+			} else {
+				display_number(temp_setpoint.value);	// show temperature setpoint
+			}
 		} else {
 			if (temp_setpoint_saved == 0) {
-			    set_eeprom_saved_dot();
-			    eep_save(&temp_setpoint);
-                eep_save(&fan_only);
-			    temp_setpoint_saved_time = millis();
+				set_eeprom_saved_dot();
+				eep_save(&temp_setpoint);
+				eep_save(&fan_only);
+				temp_setpoint_saved_time = millis();
 				temp_setpoint_saved = 1;
 			} else if (temp_average <= SAFE_TO_TOUCH_TEMP) {
-                if( fan_only.value == 1 ) {
-                    display_string("FAN");
+				if (fan_only.value == 1) {
+					display_string("FAN");
 				} else {
-                    display_string("---");
-                }                    
-            } else if ( fan_only.value == 1 ) {
-                if(display_blink < 20 ) {
-                    display_string("FAN");
-                } else {
-                    display_number(temp_average);
-                }                               
+					display_string("---");
+				}
+			} else if (fan_only.value == 1) {
+				if (display_blink < 20) {
+					display_string("FAN");
+				} else {
+					display_number(temp_average);
+				}
 			} else if (abs((int16_t) (temp_average) - (int16_t) (temp_setpoint.value)) < TEMP_REACHED_MARGIN) {
 				display_number(temp_setpoint.value);	// avoid showing insignificant fluctuations on the display (annoying)
 			} else {
@@ -435,9 +430,9 @@ int main(void)
 		if ((millis() - temp_setpoint_saved_time) > 500) {
 			clear_eeprom_saved_dot();
 		}
-        
-        fb_update();
-        
+
+		fb_update();
+
 #if defined(WATCHDOG_TEST) && defined(USE_WATCHDOG)
 		// watchdog test
 		if (temp_average > 100) {
@@ -490,26 +485,26 @@ void setup_858D(void)
 		EEPROM.write(0, 0x22);
 	}
 
-    if ( SW0_PRESSED && SW1_PRESSED ) {
+	if (SW0_PRESSED && SW1_PRESSED) {
 		restore_default_conf();
-	} else if( SW0_PRESSED ) {
-        display_string("FAN");
-        delay(1000);
-        display_string("TST");
-        delay(1000);
-        FAN_ON;
-        while (1) {
-            uint16_t fan;
-            delay(500);
-            #ifdef CURRENT_SENSE_MOD
-            fan = analogRead(A2);
-            #else //CURRENT_SENSE_MOD
-            fan = analogRead(A5);
-            #endif //CURRENT_SENSE_MOD
-            display_number(fan);
-        }
-    } 
-         
+	} else if (SW0_PRESSED) {
+		display_string("FAN");
+		delay(1000);
+		display_string("TST");
+		delay(1000);
+		FAN_ON;
+		while (1) {
+			uint16_t fan;
+			delay(500);
+#ifdef CURRENT_SENSE_MOD
+			fan = analogRead(A2);
+#else				//CURRENT_SENSE_MOD
+			fan = analogRead(A5);
+#endif				//CURRENT_SENSE_MOD
+			display_number(fan);
+		}
+	}
+
 	eep_load(&p_gain);
 	eep_load(&i_gain);
 	eep_load(&d_gain);
@@ -518,7 +513,7 @@ void setup_858D(void)
 	eep_load(&temp_setpoint);
 	eep_load(&temp_averages);
 	eep_load(&slp_timeout);
-    eep_load(&fan_only);
+	eep_load(&fan_only);
 #ifdef CURRENT_SENSE_MOD
 	eep_load(&fan_current_min);
 	eep_load(&fan_current_max);
@@ -530,24 +525,24 @@ void setup_858D(void)
 
 void clear_display(void)
 {
-    framebuffer.digit[0] = 255;
-    framebuffer.digit[1] = 255;
-    framebuffer.digit[2] = 255;
-    framebuffer.dot[0] = 0;
-    framebuffer.dot[1] = 0;
-    framebuffer.dot[2] = 0;
-    framebuffer.changed = 1;
-    fb_update();
+	framebuffer.digit[0] = 255;
+	framebuffer.digit[1] = 255;
+	framebuffer.digit[2] = 255;
+	framebuffer.dot[0] = 0;
+	framebuffer.dot[1] = 0;
+	framebuffer.dot[2] = 0;
+	framebuffer.changed = 1;
+	fb_update();
 }
 
 void display_string(const char *string)
 {
-    framebuffer.digit[0] = 255;
-    framebuffer.digit[1] = 255;
-    framebuffer.digit[2] = 255;
-    framebuffer.dot[0] = 0;
-    framebuffer.dot[1] = 0;
-    framebuffer.dot[2] = 0;
+	framebuffer.digit[0] = 255;
+	framebuffer.digit[1] = 255;
+	framebuffer.digit[2] = 255;
+	framebuffer.dot[0] = 0;
+	framebuffer.dot[1] = 0;
+	framebuffer.dot[2] = 0;
 
 	uint8_t ctr;
 
@@ -559,8 +554,8 @@ void display_string(const char *string)
 			framebuffer.digit[2 - ctr] = string[ctr];
 		}
 	}
-    framebuffer.changed = 1;
-    fb_update();
+	framebuffer.changed = 1;
+	fb_update();
 }
 
 void change_config_parameter(CPARAM * param, const char *string)
@@ -571,25 +566,25 @@ void change_config_parameter(CPARAM * param, const char *string)
 	uint8_t loop = 1;
 
 	while (loop == 1) {
-        if (get_key_short(1<<KEY_UP)) {
-            if (param->value < param->value_max) {
-                param->value++;
-            }
-        } else if (get_key_short(1<<KEY_DOWN)) {
-            if (param->value > param->value_min) {
-                param->value--;
-            }
-        } else if (get_key_long_r(1<<KEY_UP) || get_key_rpt_l(1<<KEY_UP)) {
-            if (param->value < param->value_max - 10) {
-                param->value += 10;
-            }
-        } else if (get_key_long_r(1<<KEY_DOWN) || get_key_rpt_l(1<<KEY_DOWN)) {
-            if (param->value > param->value_min + 10) {
-                param->value -= 10;
-            }
-        } else if ( get_key_common(1<<KEY_UP|1<<KEY_DOWN)) {
-            loop = 0;
-        }            
+		if (get_key_short(1 << KEY_UP)) {
+			if (param->value < param->value_max) {
+				param->value++;
+			}
+		} else if (get_key_short(1 << KEY_DOWN)) {
+			if (param->value > param->value_min) {
+				param->value--;
+			}
+		} else if (get_key_long_r(1 << KEY_UP) || get_key_rpt_l(1 << KEY_UP)) {
+			if (param->value < param->value_max - 10) {
+				param->value += 10;
+			}
+		} else if (get_key_long_r(1 << KEY_DOWN) || get_key_rpt_l(1 << KEY_DOWN)) {
+			if (param->value > param->value_min + 10) {
+				param->value -= 10;
+			}
+		} else if (get_key_common(1 << KEY_UP | 1 << KEY_DOWN)) {
+			loop = 0;
+		}
 
 		display_number(param->value);
 	}
@@ -636,7 +631,7 @@ void restore_default_conf(void)
 	temp_setpoint.value = temp_setpoint.value_default;
 	temp_averages.value = temp_averages.value_default;
 	slp_timeout.value = slp_timeout.value_default;
-    fan_only.value = 0;
+	fan_only.value = 0;
 #ifdef CURRENT_SENSE_MOD
 	fan_current_min.value = fan_current_min.value_default;
 	fan_current_max.value = fan_current_max.value_default;
@@ -653,7 +648,7 @@ void restore_default_conf(void)
 	eep_save(&temp_setpoint);
 	eep_save(&temp_averages);
 	eep_save(&slp_timeout);
-    eep_save(&fan_only);
+	eep_save(&fan_only);
 #ifdef CURRENT_SENSE_MOD
 	eep_save(&fan_current_min);
 	eep_save(&fan_current_max);
@@ -666,42 +661,42 @@ void restore_default_conf(void)
 void set_dot(void)
 {
 	framebuffer.dot[0] = 1;
-    framebuffer.changed = 1;
-    fb_update();
+	framebuffer.changed = 1;
+	fb_update();
 }
 
 void clear_dot(void)
 {
-    framebuffer.dot[0] = 0;
-    framebuffer.changed = 1;
-    fb_update();
+	framebuffer.dot[0] = 0;
+	framebuffer.changed = 1;
+	fb_update();
 }
 
 void set_eeprom_saved_dot(void)
 {
 	framebuffer.dot[1] = 1;
-    framebuffer.changed = 1;
-    fb_update();
+	framebuffer.changed = 1;
+	fb_update();
 }
 
 void clear_eeprom_saved_dot(void)
 {
 	framebuffer.dot[1] = 0;
-    framebuffer.changed = 1;
-    fb_update();
+	framebuffer.changed = 1;
+	fb_update();
 }
 
 void display_number(int16_t number)
 {
 	if (number < 0) {
-        framebuffer.dot[0] = 1;
-        framebuffer.dot[1] = 1;
-        framebuffer.dot[2] = 1;
+		framebuffer.dot[0] = 1;
+		framebuffer.dot[1] = 1;
+		framebuffer.dot[2] = 1;
 		number = -number;
 	} else {
 		// don't clear framebuffer[3], as this is the heater-indicator
-        framebuffer.dot[1] = 0;
-        framebuffer.dot[2] = 0;
+		framebuffer.dot[1] = 0;
+		framebuffer.dot[2] = 0;
 	}
 
 	framebuffer.digit[0] = (uint8_t) (number % 10);
@@ -709,13 +704,13 @@ void display_number(int16_t number)
 	framebuffer.digit[1] = (uint8_t) (number % 10);
 	number /= 10;
 	framebuffer.digit[2] = (uint8_t) (number % 10);
-    framebuffer.changed = 1;
-    fb_update();
+	framebuffer.changed = 1;
+	fb_update();
 }
 
 void display_char(uint8_t digit, uint8_t character, uint8_t dot)
 {
-    uint8_t portout = 0xFF;
+	uint8_t portout = 0xFF;
 
 	switch (character) {
 	case 0:
@@ -815,10 +810,11 @@ void display_char(uint8_t digit, uint8_t character, uint8_t dot)
 		portout = (uint8_t) (~0x10);	// '.'
 		break;
 	}
-    
-    if( dot ) portout &= (~0x10);	// '.'
-    
-    fb[digit] = portout;
+
+	if (dot)
+		portout &= (~0x10);	// '.'
+
+	fb[digit] = portout;
 }
 
 void segm_test(void)
@@ -856,44 +852,44 @@ void char_test(void)
 
 void fan_test(void)
 {
-    HEATER_OFF;
+	HEATER_OFF;
 
-    // if the wand is not in the cradle when powered up, go into a safe mode
-    // and display an error
-    while (!REEDSW_CLOSED) {
-        display_string("CRA");
-        delay(1000);
-        display_string("DLE");
-        delay(2000);
-        clear_display();
-        delay(1000);
-    }
+	// if the wand is not in the cradle when powered up, go into a safe mode
+	// and display an error
+	while (!REEDSW_CLOSED) {
+		display_string("CRA");
+		delay(1000);
+		display_string("DLE");
+		delay(2000);
+		clear_display();
+		delay(1000);
+	}
 
 #ifdef CURRENT_SENSE_MOD
-    uint16_t fan_current;
+	uint16_t fan_current;
 	FAN_ON;
 	delay(3000);
 	fan_current = analogRead(A2);
 
 	if ((fan_current < (uint16_t) (fan_current_min.value)) || (fan_current > (uint16_t) (fan_current_max.value))) {
-#else //CURRENT_SENSE_MOD
-    uint16_t fan_speed;
-    FAN_ON;
-    delay(3000);
-    fan_speed = analogRead(A5);
+#else				//CURRENT_SENSE_MOD
+	uint16_t fan_speed;
+	FAN_ON;
+	delay(3000);
+	fan_speed = analogRead(A5);
 
-    if ((fan_speed < (uint16_t) (fan_speed_min.value)) || (fan_speed > (uint16_t) (fan_speed_max.value))) {
-#endif //CURRENT_SENSE_MOD
+	if ((fan_speed < (uint16_t) (fan_speed_min.value)) || (fan_speed > (uint16_t) (fan_speed_max.value))) {
+#endif				//CURRENT_SENSE_MOD
 		// the fan is not working as it should
 		FAN_OFF;
 		while (1) {
 			display_string("FAN");
 			delay(1000);
-            #ifdef CURRENT_SENSE_MOD
+#ifdef CURRENT_SENSE_MOD
 			display_string("CUR");
-            #else //CURRENT_SENSE_MOD
-            display_string("SPD");
-            #endif //CURRENT_SENSE_MOD
+#else				//CURRENT_SENSE_MOD
+			display_string("SPD");
+#endif				//CURRENT_SENSE_MOD
 			delay(2000);
 			clear_display();
 			delay(1000);
@@ -904,7 +900,6 @@ void fan_test(void)
 
 }
 
-
 void show_firmware_version(void)
 {
 	framebuffer.digit[0] = FW_MINOR_V_B;	// dig0
@@ -913,8 +908,8 @@ void show_firmware_version(void)
 	framebuffer.dot[0] = 0;	// dig0.dot
 	framebuffer.dot[1] = 0;	// dig1.dot
 	framebuffer.dot[2] = 1;	// dig2.dot
-    framebuffer.changed = 1;
-    fb_update();
+	framebuffer.changed = 1;
+	fb_update();
 	delay(2000);
 }
 
@@ -948,8 +943,8 @@ void setup_timer1_ctc(void)
 	TCCR1A &= ~(_BV(COM1A1) | _BV(COM1A0) | _BV(COM1B1) | _BV(COM1B0));
 
 	/* set top value for TCNT1 */
-	OCR1A = 640;    // key debouncing every 20.48ms
-    OCR1B = 8;      // new segment every 256µs, complete display update every 6ms <=> 160Hz
+	OCR1A = 640;		// key debouncing every 20.48ms
+	OCR1B = 8;		// new segment every 256µs, complete display update every 6ms <=> 160Hz
 
 	/* enable COMPA and COMPB isr */
 	TIMSK1 |= _BV(OCIE1A) | _BV(OCIE1B);
@@ -958,103 +953,103 @@ void setup_timer1_ctc(void)
 	SREG = _sreg;
 }
 
-ISR(TIMER1_COMPB_vect) {
-    static uint8_t digit = 0;
+ISR(TIMER1_COMPB_vect)
+{
+	static uint8_t digit = 0;
 
-    digit++;
+	digit++;
 
-    if (digit == 24) {
-        digit = 0;
-    }
+	if (digit == 24) {
+		digit = 0;
+	}
 
-    uint8_t bm;
-    // explicit switch is faster than variable shifting
-    switch( digit & 0x07 ) {
-        case 0:
-            bm = ~(1<<0);
-            break;
-        case 1:
-            bm = ~(1<<1);
-            break;
-        case 2:
-            bm = ~(1<<2);
-            break;
-        case 3:
-            bm = ~(1<<3);
-            break;
-        case 4:
-            bm = ~(1<<4);
-            break;
-        case 5:
-            bm = ~(1<<5);
-            break;
-        case 6:
-            bm = ~(1<<6);
-            break;
-        case 7:
-            bm = (uint8_t) ~(1<<7);
-            break;
-    }
+	uint8_t bm;
+	// explicit switch is faster than variable shifting
+	switch (digit & 0x07) {
+	case 0:
+		bm = ~(1 << 0);
+		break;
+	case 1:
+		bm = ~(1 << 1);
+		break;
+	case 2:
+		bm = ~(1 << 2);
+		break;
+	case 3:
+		bm = ~(1 << 3);
+		break;
+	case 4:
+		bm = ~(1 << 4);
+		break;
+	case 5:
+		bm = ~(1 << 5);
+		break;
+	case 6:
+		bm = ~(1 << 6);
+		break;
+	case 7:
+		bm = (uint8_t) ~ (1 << 7);
+		break;
+	}
 
-    // all segments OFF (set HIGH, as current sinks)
-    SEGS_OFF;
+	// all segments OFF (set HIGH, as current sinks)
+	SEGS_OFF;
 
-    switch (digit/8) {
-        case 0:
-            DIG0_ON;	// turn on digit #0 (from right)
-            PORTD = fb[0] | bm;
-            DIG1_OFF;
-            DIG2_OFF;
-            break;
-        case 1:
-            DIG1_ON;	// #1
-            PORTD = fb[1]| bm;
-            DIG0_OFF;
-            DIG2_OFF;
-            break;
-        case 2:
-            DIG2_ON;	// #2
-            PORTD = fb[2]| bm;
-            DIG0_OFF;
-            DIG1_OFF;
-            break;
-        default:
-            DIG0_OFF;
-            DIG1_OFF;
-            DIG2_OFF;
-            break;
-    }
+	switch (digit / 8) {
+	case 0:
+		DIG0_ON;	// turn on digit #0 (from right)
+		PORTD = fb[0] | bm;
+		DIG1_OFF;
+		DIG2_OFF;
+		break;
+	case 1:
+		DIG1_ON;	// #1
+		PORTD = fb[1] | bm;
+		DIG0_OFF;
+		DIG2_OFF;
+		break;
+	case 2:
+		DIG2_ON;	// #2
+		PORTD = fb[2] | bm;
+		DIG0_OFF;
+		DIG1_OFF;
+		break;
+	default:
+		DIG0_OFF;
+		DIG1_OFF;
+		DIG2_OFF;
+		break;
+	}
 
-    
-    
-    if( OCR1B == 640 ) {
-        OCR1B = 8;
-    } else {
-        OCR1B += 8;
-    }    
+	if (OCR1B == 640) {
+		OCR1B = 8;
+	} else {
+		OCR1B += 8;
+	}
 }
 
 ISR(TIMER1_COMPA_vect)
-{   
-    // explained in https://www.mikrocontroller.net/articles/Entprellung#Komfortroutine_.28C_f.C3.BCr_AVR.29
-    static uint8_t ct0, ct1, rpt;
-    uint8_t i;
-    
-    i = key_state ^ ~KEY_PIN;                       // key changed ?
-    ct0 = ~( ct0 & i );                             // reset or count ct0
-    ct1 = ct0 ^ (ct1 & i);                          // reset or count ct1
-    i &= ct0 & ct1;                                 // count until roll over ?
-    key_state ^= i;                                 // then toggle debounced state
-    key_press |= key_state & i;                     // 0->1: key press detect
-      
-    if( (key_state & REPEAT_MASK) == 0 )            // check repeat function
-    rpt = REPEAT_START;                          // start delay
-    if( --rpt == 0 ){
-        rpt = REPEAT_NEXT;                            // repeat delay
-        key_rpt |= key_state & REPEAT_MASK;
-    }
-    
-    if(++display_blink > 50) display_blink = 0;
+{
+	// explained in https://www.mikrocontroller.net/articles/Entprellung#Komfortroutine_.28C_f.C3.BCr_AVR.29
+	static uint8_t ct0, ct1, rpt;
+	uint8_t i;
+
+	i = key_state ^ ~KEY_PIN;	// key changed ?
+	ct0 = ~(ct0 & i);	// reset or count ct0
+	ct1 = ct0 ^ (ct1 & i);	// reset or count ct1
+	i &= ct0 & ct1;		// count until roll over ?
+	key_state ^= i;		// then toggle debounced state
+	key_press |= key_state & i;	// 0->1: key press detect
+
+	if ((key_state & REPEAT_MASK) == 0)	// check repeat function
+		rpt = REPEAT_START;	// start delay
+	if (--rpt == 0) {
+		rpt = REPEAT_NEXT;	// repeat delay
+		key_rpt |= key_state & REPEAT_MASK;
+	}
+
+	if (++display_blink > 50)
+		display_blink = 0;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -1062,12 +1057,13 @@ ISR(TIMER1_COMPA_vect)
 // check if a key has been pressed. Each pressed key is reported
 // only once
 //
-uint8_t get_key_press( uint8_t key_mask ) {
-    cli();                                          // read and clear atomic !
-    key_mask &= key_press;                          // read key(s)
-    key_press ^= key_mask;                          // clear key(s)
-    sei();
-    return key_mask;
+uint8_t get_key_press(uint8_t key_mask)
+{
+	cli();			// read and clear atomic !
+	key_mask &= key_press;	// read key(s)
+	key_press ^= key_mask;	// clear key(s)
+	sei();
+	return key_mask;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -1078,47 +1074,53 @@ uint8_t get_key_press( uint8_t key_mask ) {
 // to this function. This simulates the user repeatedly
 // pressing and releasing the key.
 //
-uint8_t get_key_rpt( uint8_t key_mask ) {
-    cli();                                          // read and clear atomic !
-    key_mask &= key_rpt;                            // read key(s)
-    key_rpt ^= key_mask;                            // clear key(s)
-    sei();
-    return key_mask;
+uint8_t get_key_rpt(uint8_t key_mask)
+{
+	cli();			// read and clear atomic !
+	key_mask &= key_rpt;	// read key(s)
+	key_rpt ^= key_mask;	// clear key(s)
+	sei();
+	return key_mask;
 }
 
 ///////////////////////////////////////////////////////////////////
 //
 // check if a key is pressed right now
 //
-uint8_t get_key_state( uint8_t key_mask ) {
-    key_mask &= key_state;
-    return key_mask;
+uint8_t get_key_state(uint8_t key_mask)
+{
+	key_mask &= key_state;
+	return key_mask;
 }
 
 ///////////////////////////////////////////////////////////////////
 //
-uint8_t get_key_short( uint8_t key_mask ) {
-    cli();                                          // read key state and key press atomic !
-    return get_key_press( ~key_state & key_mask );
+uint8_t get_key_short(uint8_t key_mask)
+{
+	cli();			// read key state and key press atomic !
+	return get_key_press(~key_state & key_mask);
 }
 
 ///////////////////////////////////////////////////////////////////
 //
-uint8_t get_key_long( uint8_t key_mask ) {
-    return get_key_press( get_key_rpt( key_mask ));
+uint8_t get_key_long(uint8_t key_mask)
+{
+	return get_key_press(get_key_rpt(key_mask));
 }
 
-uint8_t get_key_long_r( uint8_t key_mask ) {     // if repeat function needed
-    return get_key_press( get_key_rpt( key_press & key_mask ));
+uint8_t get_key_long_r(uint8_t key_mask)
+{				// if repeat function needed
+	return get_key_press(get_key_rpt(key_press & key_mask));
 }
 
-
-uint8_t get_key_rpt_l( uint8_t key_mask ) {      // if long function needed
-    return get_key_rpt( ~key_press & key_mask );
+uint8_t get_key_rpt_l(uint8_t key_mask)
+{				// if long function needed
+	return get_key_rpt(~key_press & key_mask);
 }
 
-uint8_t get_key_common( uint8_t key_mask ){
-    return get_key_press((key_press & key_mask) == key_mask ? key_mask : 0);
+uint8_t get_key_common(uint8_t key_mask)
+{
+	return get_key_press((key_press & key_mask) == key_mask ? key_mask : 0);
 }
 
 #ifdef USE_WATCHDOG
@@ -1145,16 +1147,18 @@ void watchdog_off_early(void)
 }
 #endif
 
-void fb_update() {
-    if( !framebuffer.changed ) return;
-        
-    uint8_t _sreg = SREG;	/* save SREG */
-    cli();			        /* disable all interrupts to avoid half-updated screens */
-    
-    for(uint8_t digit = 0; digit < 3; digit++) {
-        display_char(digit, framebuffer.digit[digit], framebuffer.dot[digit]);
-    }
-    framebuffer.changed = 0;
-    
-    SREG = _sreg;
+void fb_update()
+{
+	if (!framebuffer.changed)
+		return;
+
+	uint8_t _sreg = SREG;	/* save SREG */
+	cli();			/* disable all interrupts to avoid half-updated screens */
+
+	for (uint8_t digit = 0; digit < 3; digit++) {
+		display_char(digit, framebuffer.digit[digit], framebuffer.dot[digit]);
+	}
+	framebuffer.changed = 0;
+
+	SREG = _sreg;
 }

@@ -34,9 +34,9 @@ typedef struct CPARAM {
 } CPARAM;
 
 typedef struct {
-    char digit[3];
-    bool dot[3];
-    bool changed:1;
+	char digit[3];
+	bool dot[3];
+	bool changed:1;
 } framebuffer_t;
 
 void change_config_parameter(CPARAM * param, const char *string);
@@ -66,15 +66,14 @@ void watchdog_off_early(void) __attribute__ ((naked)) __attribute__ ((section(".
 void watchdog_off(void);
 void watchdog_on(void);
 #endif
-uint8_t get_key_press( uint8_t key_mask );
-uint8_t get_key_rpt( uint8_t key_mask );
-uint8_t get_key_state( uint8_t key_mask );
-uint8_t get_key_short( uint8_t key_mask );
-uint8_t get_key_long( uint8_t key_mask );
-uint8_t get_key_long_r( uint8_t key_mask );
-uint8_t get_key_rpt_l( uint8_t key_mask );
-uint8_t get_key_common( uint8_t key_mask );
-
+uint8_t get_key_press(uint8_t key_mask);
+uint8_t get_key_rpt(uint8_t key_mask);
+uint8_t get_key_state(uint8_t key_mask);
+uint8_t get_key_short(uint8_t key_mask);
+uint8_t get_key_long(uint8_t key_mask);
+uint8_t get_key_long_r(uint8_t key_mask);
+uint8_t get_key_rpt_l(uint8_t key_mask);
+uint8_t get_key_common(uint8_t key_mask);
 
 #define FAN_OFF ( PORTC |= _BV(PC3) )
 #define FAN_ON  ( PORTC &= ~_BV(PC3) )
@@ -146,7 +145,7 @@ uint8_t get_key_common( uint8_t key_mask );
 #define ALL_KEYS        (1<<KEY_DOWN | 1<<KEY_UP)
 
 #define REPEAT_MASK     (1<<KEY_DOWN | 1<<KEY_UP)
-#define REPEAT_START    20                        // after 20*20.48ms = 409.6ms
-#define REPEAT_NEXT     6                         // every 6*20.48ms = 122.88ms
+#define REPEAT_START    20	// after 20*20.48ms = 409.6ms
+#define REPEAT_NEXT     6	// every 6*20.48ms = 122.88ms
 
-#endif // youyoue858d_h
+#endif				// youyoue858d_h
