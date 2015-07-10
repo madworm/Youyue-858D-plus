@@ -32,6 +32,9 @@ if [[ -n ${vline} ]]; then
     exit 2
 fi
 
+indent -linux -l150 youyue858d.ino
+indent -linux -l150 youyue858d.h
+
 file328="${date}__commit-${gitid}__ATmega328P-8MHz-RC-osc__FUSES-0xE2-0xDF-0xFD__${vers}-WDT.hex"
 file168="${date}__commit-${gitid}__ATmega168-8MHz-RC-osc__FUSES-0xE2-0xDD-0xFD__${vers}-WDT.hex"
 
@@ -50,4 +53,5 @@ sha1sum ${file168} ${file328} > SHA1SUMS.TXT
 
 git add -f ${file168} ${file328} SHA1SUMS.TXT
 
-git commit -m '
+git commit -m "release binaries ${vers}"
+git tag -a "v${vmaj}.${vmia}${vmib}"
