@@ -16,21 +16,16 @@
  * Date:	2015-02-01
  * PCB version: 858D V6.0
  * Date code:   20140415
- * HW mods:	not tested!
  *
- * Developed for / tested on by Robert Spitzenpfeil:
- * -------------------------------------------------
- * 
- * Reported to work with (I did not test these myself):
- * ----------------------------------------------------
- *
- * Reported by:	"Aric"
+ * Developed for / tested on by Moritz Augsburger:
+ * -----------------------------------------------
+
  * Date:	2015-02-01
  * PCB version: 858D V6.0
  * Date code:   20140415
- * HW mods:	not tested!
- *
- * ---
+ * 
+ * Reported to work with (I did not test these myself):
+ * ----------------------------------------------------
  *
  * PCB version: 858D V4.3
  * Date code:   20130529
@@ -53,43 +48,8 @@
  * LilyPad Arduino w/ ATmega168 (TESTED - WORKS)
  * LilyPad Arduino w/ ATmega328 (TESTED - WORKS)
  *
- * ONLY upload code using 'Upload Using Programmer'
- *
- *
- *
- * AVRDUDE command line for writing the FUSE settings to the chip (required once):
- *
- * avrdude -c <programmer> -P <port,optional> -p <target-mcu> -U lfuse:w:0xAA:m -U hfuse:w:0xBB:m -U efuse:w:0xCC:m -U lock:w:0xDD:m
- *
- * 
- * 1) avrispmkii + 168
- *
- *    avrdude -c avrispmkii -p atmega168 -U lfuse:w:0xE2:m -U hfuse:w:0xDD:m -U efuse:w:0x05:m -U lock:w:0x0F:m
- *    
- * 2) usbtiny + 168
- *
- *    avrdude -c usbtiny -P usb -p atmega168 -U lfuse:w:0xE2:m -U hfuse:w:0xDD:m -U efuse:w:0x05:m -U lock:w:0x0F:m
- *
- * 3) usbasp + 168
- *
- *    avrdude -c usbasp -p atmega168 -v -U lfuse:w:0xE2:m -U hfuse:w:0xDD:m -U efuse:w:0x05:m -U lock:w:0x0F:m
- *
- * 4) avrispmkii + 328p
- *
- *    avrdude -c avrispmkii -p atmega328p -U lfuse:w:0xE2:m -U hfuse:w:0xDF:m -U efuse:w:0x05:m -U lock:w:0x0F:m
- *    
- * 5) usbtiny + 328p
- *
- *    avrdude -c usbtiny -P usb -p atmega328p -U lfuse:w:0xE2:m -U hfuse:w:0xDF:m -U efuse:w:0x05:m -U lock:w:0x0F:m
- *
- * 6) usbasp + 328p
- *
- *    avrdude -c usbasp -p atmega328p -v -U lfuse:w:0xE2:m -U hfuse:w:0xDF:m -U efuse:w:0x05:m -U lock:w:0x0F:m
- *
- *
- *
  * DO NOT USE A BOOTLOADER WITH THE WATCHDOG TIMER
- *
+ * 
  * ISP CODE UPLOAD ONLY
  * 
  * Change options in the .h file
