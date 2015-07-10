@@ -129,6 +129,7 @@ uint8_t get_key_common_l(uint8_t key_mask);
 
 #define FAN_OFF_TEMP 45
 #define FAN_ON_TEMP 60
+#define FAN_OFF_TEMP_FANONLY (SAFE_TO_TOUCH_TEMP - 2)
 
 #define FAN_SPEED_MIN_DEFAULT 150UL
 #define FAN_SPEED_MAX_DEFAULT 360UL

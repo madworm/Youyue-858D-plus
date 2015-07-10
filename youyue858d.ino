@@ -296,7 +296,9 @@ int main(void)
 		// fan/cradle handling
 		if (temp_average >= FAN_ON_TEMP) {
 			FAN_ON;
-		} else if (REEDSW_CLOSED && (temp_average <= FAN_OFF_TEMP)) {
+		} else if (REEDSW_CLOSED && fan_only.value == 1 && (temp_average <= FAN_OFF_TEMP_FANONLY)) {
+			FAN_OFF;
+		} else if (REEDSW_CLOSED && fan_only.value == 0 && (temp_average <= FAN_OFF_TEMP)) {
 			FAN_OFF;
 		} else if (REEDSW_OPEN) {
 			FAN_ON;
@@ -338,7 +340,7 @@ int main(void)
 #ifdef USE_WATCHDOG
 			watchdog_off();
 #endif
-			delay(uint16_t ( 20.48 * (REPEAT_START - 3) + 1));
+			delay(uint16_t(20.48 * (REPEAT_START - 3) + 1));
 			if (get_key_long_r(1 << KEY_UP | 1 << KEY_DOWN)) {
 				change_config_parameter(&p_gain, "P");
 				change_config_parameter(&i_gain, "I");
