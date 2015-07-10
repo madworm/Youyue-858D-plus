@@ -54,4 +54,4 @@ sha1sum ${file168} ${file328} > SHA1SUMS.TXT
 git add -f ${file168} ${file328} SHA1SUMS.TXT
 
 git commit -m "release binaries ${vers}"
-git tag -a "v${vmaj}.${vmia}${vmib}"
+git tag -a "v${vmaj}.${vmia}${vmib}" -m "$(git log -1 --skip=1 --pretty=format:"%B")"
