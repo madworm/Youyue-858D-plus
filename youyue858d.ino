@@ -817,39 +817,6 @@ void display_char(uint8_t digit, uint8_t character, uint8_t dot)
 	fb[digit] = portout;
 }
 
-void segm_test(void)
-{
-	uint8_t ctr;
-
-	PORTB |= (_BV(PB0) | _BV(PB6) | _BV(PB7));
-
-	for (ctr = 0; ctr <= 7; ctr++) {
-		SEGS_OFF;
-		PORTD &= ~_BV(ctr);
-		delay(200);
-	}
-}
-
-void char_test(void)
-{
-	uint16_t ctr;
-
-	for (ctr = 0; ctr <= 255; ctr++) {
-		display_char(0, ctr);
-		delay(10);
-	}
-
-	for (ctr = 0; ctr <= 255; ctr++) {
-		display_char(1, ctr);
-		delay(10);
-	}
-
-	for (ctr = 0; ctr <= 255; ctr++) {
-		display_char(2, ctr);
-		delay(10);
-	}
-}
-
 void fan_test(void)
 {
 	HEATER_OFF;
