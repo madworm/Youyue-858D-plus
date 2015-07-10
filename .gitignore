@@ -1,8 +1,10 @@
 *~
 *bak
 *.hex
+*.swp
 youyue858d.atsuo
 youyue858d.atsln
 /Debug
 /Release
 /Visual Micro
+/build-*
