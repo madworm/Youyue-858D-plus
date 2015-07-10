@@ -29,13 +29,14 @@ Temperature control:
 * Long button press:  +- 10°C
 * The set-point is stored in eeprom
 * Temperature range: 50...500 °C
-* Fan Only mode (short press Down with 50 °C set)
+* Fan Only mode (press both buttons together shortly)
 
 
 Settings:
 =========
 
-* Config mode is entered by pressing both buttons _at the same time_
+* Config mode is entered by pressing both buttons _at the same time_ 
+  for a longer time
 * When Settings are changed, the heater is always off
 * The state of the fan is not changed when entering config mode
 * The display will show an abbreviated name for each parameter
@@ -103,7 +104,7 @@ Error behaviour:
   display the error message "°C" + "Err".
   
   The heater will be turned off permanently, the fan will be turned on 
-  to allow fast cool-down and the display will blink "FAN" until power is cycled.
+  to allow fast cool-down and the display will blink "*C" and "ERR" until power is cycled.
 
 * If the device is powered up and the wand is not in the cradle, an error message
   will be displayed ("CrA" + "dlE"). Put the wand into the cradle for normal operation.
@@ -112,10 +113,13 @@ Error behaviour:
   with the wand on the table (e.g. after power outage).
 
 * If the fan-speed on power-up (fan-test) is out of range (F-L, F-h config parameters),
-  an error message "FAN" + "SPd" will be displayed.
+  an error message "FAN" + "SPd" or "FAN" + "Cur" will be displayed.
 
   (This does not necessarily detect a stalled fan, as the feedback is just the
-   drive voltage, not an actual tacho signal!)
+   drive voltage or current, not an actual tacho signal!)
+
+  If you get this error on every startup with a low or high fan speed, adjust the config
+  parameters for fsl/fsh (speed) or fcl/fch (current)
 
 * If the WATCHDOG is used (by default) and the device becomes unresponsive for more
   than about 120ms AND the heater is ON, a watchdog-reset is triggered.
