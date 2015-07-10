@@ -74,6 +74,7 @@ uint8_t get_key_long(uint8_t key_mask);
 uint8_t get_key_long_r(uint8_t key_mask);
 uint8_t get_key_rpt_l(uint8_t key_mask);
 uint8_t get_key_common(uint8_t key_mask);
+uint8_t get_key_common_l(uint8_t key_mask);
 
 #define FAN_OFF ( PORTC |= _BV(PC3) )
 #define FAN_ON  ( PORTC &= ~_BV(PC3) )
@@ -146,6 +147,6 @@ uint8_t get_key_common(uint8_t key_mask);
 
 #define REPEAT_MASK     (1<<KEY_DOWN | 1<<KEY_UP)
 #define REPEAT_START    20	// after 20*20.48ms = 409.6ms
-#define REPEAT_NEXT     6	// every 6*20.48ms = 122.88ms
+#define REPEAT_NEXT     8	// every 6*20.48ms = 122.88ms
 
 #endif				// youyoue858d_h

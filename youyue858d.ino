@@ -333,13 +333,13 @@ int main(void)
 			}
 
 			temp_setpoint_saved = 0;
-		} else if (get_key_common(1 << KEY_UP | 1 << KEY_DOWN)) {
+		} else if (get_key_common_l(1 << KEY_UP | 1 << KEY_DOWN)) {
 			HEATER_OFF;	// security reasons, delay below!
 #ifdef USE_WATCHDOG
 			watchdog_off();
 #endif
-			delay(REPEAT_START * 21);
-			if (get_key_rpt_l(1 << KEY_UP | 1 << KEY_DOWN)) {
+			delay(uint16_t ( 20.48 * (REPEAT_START - 3) + 1));
+			if (get_key_long_r(1 << KEY_UP | 1 << KEY_DOWN)) {
 				change_config_parameter(&p_gain, "P");
 				change_config_parameter(&i_gain, "I");
 				change_config_parameter(&d_gain, "D");
@@ -355,6 +355,7 @@ int main(void)
 				change_config_parameter(&fan_speed_max, "FSH");
 #endif
 			} else {
+				get_key_press(1 << KEY_UP | 1 << KEY_DOWN);	// clear inp state
 				fan_only.value ^= 0x01;
 				temp_setpoint_saved = 0;
 				if (fan_only.value == 0) {
@@ -393,7 +394,6 @@ int main(void)
 				delay(1000);
 			}
 		}
-
 		// display output
 		if ((millis() - button_input_time) < SHOW_SETPOINT_TIMEOUT) {
 			if (display_blink < 5) {
@@ -1121,6 +1121,11 @@ uint8_t get_key_rpt_l(uint8_t key_mask)
 uint8_t get_key_common(uint8_t key_mask)
 {
 	return get_key_press((key_press & key_mask) == key_mask ? key_mask : 0);
+}
+
+uint8_t get_key_common_l(uint8_t key_mask)
+{
+	return get_key_state((key_press & key_mask) == key_mask ? key_mask : 0);
 }
 
 #ifdef USE_WATCHDOG
