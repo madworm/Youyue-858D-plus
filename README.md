@@ -2,10 +2,9 @@
 Youyue-858D-plus
 ================
 
-CODE: Custom firmware for my Youyue 858D+ (ATmega168)
+Custom firmware for the Youyue 858D+ (ATmega168/ATmega328)
 
 There is a 'user manual' of sorts in the 'Docs' folder.
-
 
 Some videos showing the progress from 'stock firmware' with massive temperature overshoot
 towards almost no overshoot at all.
@@ -24,6 +23,14 @@ Please see the 'Docs' folder for schematic and PCB photos.
 
 MCU-Adapter [repository](//github.com/madworm/Youyue-858D-plus-MCU-adapter) (optional).
 
+Compiling/Development
+=====================
+There are currently three options available, choose your preferred environemt:
+* Use the [https://www.arduino.cc/en/Main/Software](Arduino IDE), make sure you do ISP Upload and _don't_ use the arduino bootloader.
+* Use [http://www.atmel.com/microsite/atmel_studio6/](Atmel Studio 6) together with the [http://www.visualmicro.com/page/Arduino-for-Atmel-Studio.aspx](VisualMicro Plugin) for Arduino support, make sure you do ISP Upload and _don't_ use the arduino bootloader.
+* "raw" text editing and Makefiles, to do so run `git submodule update --init` and afterwards `make ispload`. You probably need to adjust `ISP_PROG` and `AVRDUDE_ARD_PROGRAMMER` in the makefile.
+
+The supplied `release.sh` only works together with the Makefile method.
 
 ---
 
