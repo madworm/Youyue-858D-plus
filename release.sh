@@ -22,8 +22,7 @@ if [[ -z ${vmaj} || -z ${vmia} || -z ${vmib}  ]]; then
     exit 2
 fi
 
-vline=$(cut -d'
-' -f5 youyue858d.ino | sed "s/^ \\* ${vers}$//" )
+vline=$(cut -d'\n' -f5 youyue858d.ino | sed "s/^ \\* ${vers}$//" )
 
 echo "vline: '$vline'"
 
