@@ -22,12 +22,11 @@ if [[ -z ${vmaj} || -z ${vmia} || -z ${vmib}  ]]; then
     exit 2
 fi
 
-vline=$(cut -d'
-' -f5 youyue858d.ino | sed "s/^ \\* ${vers}$//" )
+vline=$(head -n 5 youyue858d.ino | tail -n 1)
 
 echo "vline: '$vline'"
 
-if [[ -n ${vline} ]]; then
+if [[ ${vline} != " * ${vers}" ]]; then
     echo "invalid version in line 5!"
     exit 2
 fi
