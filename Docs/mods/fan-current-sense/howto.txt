@@ -12,9 +12,3 @@ Measured values:
 fan-current at lowest speed:   74mA - ADC: ~30 (Vref = 2.5V)
 fan-current at highest speed: 174mA - ADC: ~70
 
-
-Commutation detection:
-======================
-
-TODO
-
