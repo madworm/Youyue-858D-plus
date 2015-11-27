@@ -22,6 +22,10 @@ Naturally, this firmware will only work 'as is' for the exact mcu / mainboard co
 Please see the 'Docs' folder for schematic and PCB photos.
 
 MCU-Adapter [repository](//github.com/madworm/Youyue-858D-plus-MCU-adapter) (optional).
+FAN-speed-mod [repository](//github.com/madworm/Youyue-858D-plus-FAN-speed-mod) (optional).
+
+Adapter PCB for clones with Samsung MCU [EEVBLOG](http://www.eevblog.com/forum/reviews/youyue-858d-some-reverse-engineering-custom-firmware/165/)
+
 
 Compiling/Development
 =====================
