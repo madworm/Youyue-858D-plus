@@ -62,7 +62,7 @@ void show_firmware_version(void);
 void fb_update(void);
 #ifdef USE_WATCHDOG
 uint8_t _mcusr __attribute__ ((section(".noinit")));
-void watchdog_off_early(void) __attribute__ ((naked)) __attribute__ ((section(".init1")));
+void watchdog_off_early(void) __attribute__ ((naked)) __attribute__ ((section(".init3")));	// requires R1 to be zero! (do NOT use .init1)
 void watchdog_off(void);
 void watchdog_on(void);
 #endif
