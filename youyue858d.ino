@@ -2,7 +2,7 @@
  * This is a custom firmware for my 'Youyue 858D+' hot-air soldering station.
  * It may or may not be useful to you, always double check if you use it.
  *
- * V1.44
+ * V1.45
  *
  * 2015 - Robert Spitzenpfeil
  * 2015 - Moritz Augsburger
@@ -58,7 +58,7 @@
 
 #define FW_MAJOR_V 1
 #define FW_MINOR_V_A 4
-#define FW_MINOR_V_B 4
+#define FW_MINOR_V_B 5
 /*
  * PC5: FAN-speed (A5 in Arduino lingo) (OK)
  * PC3: TIP122.base --> FAN (OK)
@@ -105,6 +105,7 @@ CPARAM temp_setpoint = { 50, 500, TEMP_SETPOINT_DEFAULT, TEMP_SETPOINT_DEFAULT, 
 CPARAM temp_averages = { 100, 999, TEMP_AVERAGES_DEFAULT, TEMP_AVERAGES_DEFAULT, 14, 15 };
 CPARAM slp_timeout = { 0, 30, SLP_TIMEOUT_DEFAULT, SLP_TIMEOUT_DEFAULT, 16, 17 };
 CPARAM fan_only = { 0, 1, 0, 0, 26, 27 };
+CPARAM display_adc_raw = { 0, 1, 0, 0, 28, 29 };
 
 #ifdef CURRENT_SENSE_MOD
 CPARAM fan_current_min = { 0, 999, FAN_CURRENT_MIN_DEFAULT, FAN_CURRENT_MIN_DEFAULT, 22, 23 };
@@ -185,7 +186,9 @@ int main(void)
 
 		static uint32_t heater_start_time = 0;
 
-		temp_inst = analogRead(A0) + temp_offset_corr.value;	// approx. temp in °C
+		uint16_t adc_raw = analogRead(A0);	// need raw value later, store it here and avoid 2nd ADC read
+
+		temp_inst = adc_raw + temp_offset_corr.value;	// approx. temp in °C
 
 		if (temp_inst < 0) {
 			temp_inst = 0;
@@ -309,6 +312,7 @@ int main(void)
 				change_config_parameter(&temp_offset_corr, "TOF");
 				change_config_parameter(&temp_averages, "AVG");
 				change_config_parameter(&slp_timeout, "SLP");
+				change_config_parameter(&display_adc_raw, "ADC");
 #ifdef CURRENT_SENSE_MOD
 				change_config_parameter(&fan_current_min, "FCL");
 				change_config_parameter(&fan_current_max, "FCH");
@@ -382,6 +386,8 @@ int main(void)
 				} else {
 					display_number(temp_average);
 				}
+			} else if (display_adc_raw.value == 1) {
+				display_number(adc_raw);
 			} else if (abs((int16_t) (temp_average) - (int16_t) (temp_setpoint.value)) < TEMP_REACHED_MARGIN) {
 				display_number(temp_setpoint.value);	// avoid showing insignificant fluctuations on the display (annoying)
 			} else {
@@ -476,6 +482,7 @@ void setup_858D(void)
 	eep_load(&temp_averages);
 	eep_load(&slp_timeout);
 	eep_load(&fan_only);
+	eep_load(&display_adc_raw);
 #ifdef CURRENT_SENSE_MOD
 	eep_load(&fan_current_min);
 	eep_load(&fan_current_max);
@@ -594,6 +601,7 @@ void restore_default_conf(void)
 	temp_averages.value = temp_averages.value_default;
 	slp_timeout.value = slp_timeout.value_default;
 	fan_only.value = 0;
+	display_adc_raw.value = 0;
 #ifdef CURRENT_SENSE_MOD
 	fan_current_min.value = fan_current_min.value_default;
 	fan_current_max.value = fan_current_max.value_default;
@@ -611,6 +619,7 @@ void restore_default_conf(void)
 	eep_save(&temp_averages);
 	eep_save(&slp_timeout);
 	eep_save(&fan_only);
+	eep_save(&display_adc_raw);
 #ifdef CURRENT_SENSE_MOD
 	eep_save(&fan_current_min);
 	eep_save(&fan_current_max);
