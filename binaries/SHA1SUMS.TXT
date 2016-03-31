@@ -1,2 +1,2 @@
-83bfdcba3b1f337dfb03d4baa1e0b3ea1286e155  2016-03-05__commit-b03caa3__ATmega168-8MHz-RC-osc__FUSES-0xE2-0xDD-0xFD__V1.44-WDT.hex
-0a48bedd8d7c5a25949a9bff3d53b9f24b6494dd  2016-03-05__commit-b03caa3__ATmega328P-8MHz-RC-osc__FUSES-0xE2-0xDF-0xFD__V1.44-WDT.hex
+a0de6f4e706fd96527c354486a18fa4e26bca2ff  2016-03-31__commit-25f9d1a__ATmega168-8MHz-RC-osc__FUSES-0xE2-0xDD-0xFD__V1.45-WDT.hex
+dea318f0b02e1767d995010257fd7a742595c1f8  2016-03-31__commit-25f9d1a__ATmega328P-8MHz-RC-osc__FUSES-0xE2-0xDF-0xFD__V1.45-WDT.hex
