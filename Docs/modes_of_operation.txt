@@ -42,7 +42,7 @@ Settings:
 * The display will show an abbreviated name for each parameter
 * Going to the next one is done by pressing both buttons _at the same time_
 
-  P)            p_gain    0...999
+  p)            p_gain    0...999
   i)            i_gain    0...999
   d)            d_gain    0...999
 ith)       i_threshold    0...100
@@ -53,6 +53,7 @@ fcl)   fan_current_min    0...999
 fch)   fan_current_max    0...999
 fsl)     fan_speed_min  120...180
 fsh)     fan_speed_max  300...400
+adc)   display_adc_raw	  0...1
 
 * fsl/fsh and fcl/fch are depending on CURRENT_SENSE_MOD compile time option
 
@@ -69,6 +70,11 @@ temp_offset_corr: can be used to correct a temperature difference between the di
 
                   increase, if you measure too high a temperature			
                   decrease, if measured temperature is too low
+
+display_adc_raw:  display the raw ADC value instead of derived temperature
+                  temperature regulation works as usual
+                  very useful for creating calibration data (T-measured vs. ADC value)
+
 
 Fan Speed/Current:
 ==================
