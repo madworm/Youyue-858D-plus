@@ -32,7 +32,7 @@ Compiling/Development
 =====================
 There are currently three options available, choose your preferred environemt:
 * Use the [Arduino IDE](https://www.arduino.cc/en/Main/Software), make sure you do ISP Upload and _don't_ use the arduino bootloader.
-* Use [Atmel Studio 6](http://www.atmel.com/microsite/atmel_studio6/) together with the [VisualMicro Plugin](http://www.visualmicro.com/page/Arduino-for-Atmel-Studio.aspx) for Arduino support, make sure you do ISP Upload and _don't_ use the arduino bootloader.
+* Use [Atmel Studio 6](https://www.mikrocontroller.net/articles/Atmel_Studio#Downloads) together with the [VisualMicro Plugin](http://www.visualmicro.com/page/Arduino-for-Atmel-Studio.aspx) for Arduino support, make sure you do ISP Upload and _don't_ use the arduino bootloader.
 * "raw" text editing and Makefiles, to do so run `git submodule update --init` and afterwards `make ispload`. You probably need to adjust `ISP_PROG` and `AVRDUDE_ARD_PROGRAMMER` in the makefile.
 
 The supplied `release.sh` only works together with the Makefile method.
