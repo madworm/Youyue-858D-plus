@@ -131,20 +131,27 @@ uint8_t get_key_common_l(uint8_t key_mask);
 #define FAN_ON_TEMP 60
 #define FAN_OFF_TEMP_FANONLY (SAFE_TO_TOUCH_TEMP - 2)
 
+
+//
+// Comment out the following 2 #defines, if you want to use the FAN-speed mod (HW changes required)
+// Continue reading below...
+//
+
 #define FAN_SPEED_MIN_DEFAULT 150UL
 #define FAN_SPEED_MAX_DEFAULT 360UL
 
 // 
-// good starting values with BLDC FAN-speed mod
+// Good starting values with BLDC FAN-speed mod
 //
 // #define FAN_SPEED_MIN_DEFAULT 450UL
 // #define FAN_SPEED_MAX_DEFAULT 800UL
 //
-// don't forget to extend the ranges in the .ino
+// --> Don't forget to extend the ranges in the .ino <--
 //
 // CPARAM fan_speed_min = { 0, 999, FAN_SPEED_MIN_DEFAULT, FAN_SPEED_MIN_DEFAULT, 18, 19 };
 // CPARAM fan_speed_max = { 0, 999, FAN_SPEED_MAX_DEFAULT, FAN_SPEED_MAX_DEFAULT, 20, 21 };
 //
+
 
 #define FAN_CURRENT_MIN_DEFAULT 30UL
 #define FAN_CURRENT_MAX_DEFAULT 71UL
