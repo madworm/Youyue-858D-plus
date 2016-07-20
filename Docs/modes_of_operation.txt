@@ -135,6 +135,6 @@ Error behaviour:
   The device will turn off the heater and turn on the fan. The display will blink
   the error code "rSt" until power is cycled.
 
-* If the "DIV8" FUSE bit is erroneously set when programming the firmware
+* If the "CKDIV8" FUSE bit is erroneously set when programming the firmware
   (F_CPU is divided by 8), cause a watchdog reset. See previous entry for more info.
 

@@ -1098,13 +1098,13 @@ void watchdog_off_early(void)
 void test_F_CPU_with_watchdog(void)
 {
 /*
- * Hopefully cause a watchdog reset if the DIV8 FUSE is set (F_CPU 1MHz instead of 8MHz)
+ * Hopefully cause a watchdog reset if the CKDIV8 FUSE is set (F_CPU 1MHz instead of 8MHz)
  *
  */
 	wdt_reset();
 	MCUSR &= ~_BV(WDRF);	// clear WDRF, as it overrides WDE-bit in WDTCSR-reg and leads to endless reset-loop (15ms timeout after wd-reset)
 	wdt_enable(WDTO_120MS);
-	delay(40);		// IF "DIV8" fuse is erroneously set, this should delay by 8x40 = 320ms & cause the dog to bite!
+	delay(40);		// IF "CKDIV8" fuse is erroneously set, this should delay by 8x40 = 320ms & cause the dog to bite!
 
 	watchdog_off();		// IF we got to here, F_CPU is OK.
 }
