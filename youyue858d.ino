@@ -2,10 +2,10 @@
  * This is a custom firmware for my 'Youyue 858D+' hot-air soldering station.
  * It may or may not be useful to you, always double check if you use it.
  *
- * V1.45
+ * V1.46
  *
- * 2015 - Robert Spitzenpfeil
- * 2015 - Moritz Augsburger
+ * 2015/16 - Robert Spitzenpfeil
+ * 2015    - Moritz Augsburger
  *
  * License: GNU GPL v2
  *
@@ -19,7 +19,7 @@
  *
  * Developed for / tested on by Moritz Augsburger:
  * -----------------------------------------------
-
+ *
  * Date:	2015-02-01
  * PCB version: 858D V6.0
  * Date code:   20140415
@@ -58,7 +58,7 @@
 
 #define FW_MAJOR_V 1
 #define FW_MINOR_V_A 4
-#define FW_MINOR_V_B 5
+#define FW_MINOR_V_B 6
 /*
  * PC5: FAN-speed (A5 in Arduino lingo) (OK)
  * PC3: TIP122.base --> FAN (OK)
@@ -157,7 +157,9 @@ int main(void)
 #endif
 
 	show_firmware_version();
+	test_F_CPU_with_watchdog();
 	fan_test();
+
 #ifdef USE_WATCHDOG
 	watchdog_on();
 #endif
@@ -1091,6 +1093,20 @@ void watchdog_off_early(void)
 	_mcusr = MCUSR;
 	MCUSR &= ~_BV(WDRF);	// clear WDRF, as it overrides WDE-bit in WDTCSR-reg and leads to endless reset-loop (15ms timeout after wd-reset)
 	wdt_disable();
+}
+
+void test_F_CPU_with_watchdog(void)
+{
+/*
+ * Hopefully cause a watchdog reset if the DIV8 FUSE is set (F_CPU 1MHz instead of 8MHz)
+ *
+ */
+	wdt_reset();
+	MCUSR &= ~_BV(WDRF);	// clear WDRF, as it overrides WDE-bit in WDTCSR-reg and leads to endless reset-loop (15ms timeout after wd-reset)
+	wdt_enable(WDTO_120MS);
+	delay(40);		// IF "DIV8" fuse is erroneously set, this should delay by 8x40 = 320ms & cause the dog to bite!
+
+	watchdog_off();		// IF we got to here, F_CPU is OK.
 }
 #endif
 

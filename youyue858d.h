@@ -65,6 +65,7 @@ uint8_t _mcusr __attribute__ ((section(".noinit")));
 void watchdog_off_early(void) __attribute__ ((naked)) __attribute__ ((section(".init3")));	// requires R1 to be zero! (do NOT use .init1)
 void watchdog_off(void);
 void watchdog_on(void);
+void test_F_CPU_with_watchdog(void);
 #endif
 uint8_t get_key_press(uint8_t key_mask);
 uint8_t get_key_rpt(uint8_t key_mask);
@@ -131,7 +132,6 @@ uint8_t get_key_common_l(uint8_t key_mask);
 #define FAN_ON_TEMP 60
 #define FAN_OFF_TEMP_FANONLY (SAFE_TO_TOUCH_TEMP - 2)
 
-
 //
 // Comment out the following 2 #defines, if you want to use the FAN-speed mod (HW changes required)
 // Continue reading below...
@@ -151,7 +151,6 @@ uint8_t get_key_common_l(uint8_t key_mask);
 // CPARAM fan_speed_min = { 0, 999, FAN_SPEED_MIN_DEFAULT, FAN_SPEED_MIN_DEFAULT, 18, 19 };
 // CPARAM fan_speed_max = { 0, 999, FAN_SPEED_MAX_DEFAULT, FAN_SPEED_MAX_DEFAULT, 20, 21 };
 //
-
 
 #define FAN_CURRENT_MIN_DEFAULT 30UL
 #define FAN_CURRENT_MAX_DEFAULT 71UL
