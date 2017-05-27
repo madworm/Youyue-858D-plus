@@ -20,7 +20,7 @@
 
 //#define CURRENT_SENSE_MOD
 
-#define USE_WATCHDOG
+//#define USE_WATCHDOG
 //#define DISPLAY_MCUSR
 //#define WATCHDOG_TEST
 
@@ -51,6 +51,7 @@ void display_string(const char *string);
 void eep_load(CPARAM * param);
 void eep_save(CPARAM * param);
 void fan_test(void);
+void wand_in_cradle(void);
 int main(void);
 void restore_default_conf(void);
 void segm_test(void);
@@ -76,6 +77,8 @@ uint8_t get_key_long_r(uint8_t key_mask);
 uint8_t get_key_rpt_l(uint8_t key_mask);
 uint8_t get_key_common(uint8_t key_mask);
 uint8_t get_key_common_l(uint8_t key_mask);
+
+uint16_t piecewise_map(uint16_t _x);
 
 #define FAN_OFF ( PORTC |= _BV(PC3) )
 #define FAN_ON  ( PORTC &= ~_BV(PC3) )
@@ -122,6 +125,18 @@ uint8_t get_key_common_l(uint8_t key_mask);
 #define TEMP_OFFSET_CORR_DEFAULT 33
 #define TEMP_SETPOINT_DEFAULT 75
 
+#define TEMP_CAL_X0_DEFAULT 148
+#define TEMP_CAL_X1_DEFAULT 355
+#define TEMP_CAL_X2_DEFAULT 565
+#define TEMP_CAL_X3_DEFAULT 650
+#define TEMP_CAL_X4_DEFAULT 651
+
+#define TEMP_CAL_Y0_DEFAULT 127
+#define TEMP_CAL_Y1_DEFAULT 255
+#define TEMP_CAL_Y2_DEFAULT 370
+#define TEMP_CAL_Y3_DEFAULT 419
+#define TEMP_CAL_Y4_DEFAULT 420
+
 #define TEMP_AVERAGES_DEFAULT 250L
 #define TEMP_REACHED_MARGIN 3
 
@@ -131,6 +146,8 @@ uint8_t get_key_common_l(uint8_t key_mask);
 #define FAN_OFF_TEMP 45
 #define FAN_ON_TEMP 60
 #define FAN_OFF_TEMP_FANONLY (SAFE_TO_TOUCH_TEMP - 2)
+
+#define NO_FAN_TEST // Comment out to include fan_test()
 
 //
 // Comment out the following 2 #defines, if you want to use the FAN-speed mod (HW changes required)
