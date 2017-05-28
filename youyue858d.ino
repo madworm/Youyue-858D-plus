@@ -851,6 +851,7 @@ void display_char(uint8_t digit, uint8_t character, uint8_t dot)
 	case 7:
 		portout = (uint8_t) (~0xA1);	// '7'
 		break;
+  case '8':
 	case 8:
 		portout = (uint8_t) (~0xEF);	// '8'
 		break;

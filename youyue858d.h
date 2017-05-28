@@ -78,7 +78,7 @@ uint8_t get_key_rpt_l(uint8_t key_mask);
 uint8_t get_key_common(uint8_t key_mask);
 uint8_t get_key_common_l(uint8_t key_mask);
 
-uint16_t piecewise_map(uint16_t _x);
+uint16_t piecewise_map(uint16_t _adc);
 
 #define FAN_OFF ( PORTC |= _BV(PC3) )
 #define FAN_ON  ( PORTC &= ~_BV(PC3) )
