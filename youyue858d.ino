@@ -202,7 +202,6 @@ int main(void)
 
 		static int32_t adc_raw_accu=0;
 		static int16_t adc_raw_average=0;
-		static int16_t adc_raw_average_previous=0;
 
 		static int32_t button_input_time = 0;
 
@@ -293,7 +292,6 @@ int main(void)
 			temp_accu = 0;
 			temp_avg_ctr = 0;
 
-			adc_raw_average_previous = adc_raw_average;
 			adc_raw_average = adc_raw_accu / temp_averages.value;
 			adc_raw_accu = 0;
 		}
@@ -385,17 +383,15 @@ int main(void)
 #endif
 				}
 				else if (menuitem==1) { // CAL
-					change_config_parameter(&cal_x[0], "X0");
-					change_config_parameter(&cal_x[1], "X1");
-					change_config_parameter(&cal_x[2], "X2");
-					change_config_parameter(&cal_x[3], "X3");
-					change_config_parameter(&cal_x[4], "X4");
-					change_config_parameter(&cal_y[0], "Y0");
-					change_config_parameter(&cal_y[1], "Y1");
-					change_config_parameter(&cal_y[2], "Y2");
-					change_config_parameter(&cal_y[3], "Y3");
-					change_config_parameter(&cal_y[4], "Y4");
-        }
+					char parameter_string[4] = "X-0";
+					for(unsigned char i=0; i<5; i++) {
+						parameter_string[2]=i+48;
+						parameter_string[0]='X';
+						change_config_parameter(&cal_x[i], parameter_string);
+						parameter_string[0]='Y';
+						change_config_parameter(&cal_y[i], parameter_string);
+					}
+				}
 			} // end menu selection
 			else {                                                  // FAN only toggle
 				get_key_press(1 << KEY_UP | 1 << KEY_DOWN);	// clear inp state
@@ -588,12 +584,12 @@ void setup_858D(void)
 // piecewise interpolation - maps adc into temp values
 uint16_t piecewise_map(uint16_t _adc)
 {
-	char section=0;
-	for(char j=1; j<5-1; j++) { // find section
-		if (_adc >= cal_x[j].value)
+	unsigned char section=0;
+	for(unsigned char j=1; j<5-1; j++) { // find section
+		if (_adc >= (uint16_t) cal_x[j].value)
 			section++;
 	}
-	return (uint16_t) map(_x,
+	return (uint16_t) map(_adc,
 		cal_x[section].value,
 		cal_x[section+1].value,
 		cal_y[section].value,
@@ -827,27 +823,35 @@ void display_char(uint8_t digit, uint8_t character, uint8_t dot)
 	uint8_t portout = 0xFF;
 
 	switch (character) {
-	case 0:
+  case '0':
+	case 0: // hmm, case 0 is the null termination of a string..
 		portout = (uint8_t) (~0xAF);	// activate segments for displaying a '0'
 		break;
+  case '1':
 	case 1:
 		portout = (uint8_t) (~0xA0);	// '1'
 		break;
+  case '2':
 	case 2:
 		portout = (uint8_t) (~0xC7);	// '2'
 		break;
+  case '3':
 	case 3:
 		portout = (uint8_t) (~0xE5);	// '3'
 		break;
+  case '4':
 	case 4:
 		portout = (uint8_t) (~0xE8);	// '4'
 		break;
+  case '5':
 	case 5:
 		portout = (uint8_t) (~0x6D);	// '5'
 		break;
+  case '6':
 	case 6:
 		portout = (uint8_t) (~0x6F);	// '6'
 		break;
+  case '7':
 	case 7:
 		portout = (uint8_t) (~0xA1);	// '7'
 		break;
@@ -855,6 +859,7 @@ void display_char(uint8_t digit, uint8_t character, uint8_t dot)
 	case 8:
 		portout = (uint8_t) (~0xEF);	// '8'
 		break;
+  case '9':
 	case 9:
 		portout = (uint8_t) (~0xE9);	// '9'
 		break;
@@ -916,7 +921,7 @@ void display_char(uint8_t digit, uint8_t character, uint8_t dot)
 		portout = (uint8_t) (~0x26);	// 'v'
 		break;
 	case 'X':
-		portout = (uint8_t) (~0x6A);	// 'X' needs more work :-\
+		portout = (uint8_t) (~0xEA);	// 'X'
 		break;
 	case 'Y':
 		portout = (uint8_t) (~0xE8);	// 'y'
