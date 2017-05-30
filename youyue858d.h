@@ -51,7 +51,7 @@ void display_string(const char *string);
 void eep_load(CPARAM * param);
 void eep_save(CPARAM * param);
 void fan_test(void);
-void wand_in_cradle(void);
+void wand_in_cradle_test(void);
 int main(void);
 void restore_default_conf(void);
 void segm_test(void);
@@ -125,17 +125,17 @@ uint16_t piecewise_map(uint16_t _adc);
 #define TEMP_OFFSET_CORR_DEFAULT 33
 #define TEMP_SETPOINT_DEFAULT 75
 
-#define TEMP_CAL_X0_DEFAULT 148
-#define TEMP_CAL_X1_DEFAULT 355
-#define TEMP_CAL_X2_DEFAULT 565
-#define TEMP_CAL_X3_DEFAULT 650
-#define TEMP_CAL_X4_DEFAULT 651
+#define TEMP_CAL_ADC0_DEFAULT 148
+#define TEMP_CAL_ADC1_DEFAULT 355
+#define TEMP_CAL_ADC2_DEFAULT 565
+#define TEMP_CAL_ADC3_DEFAULT 650
+#define TEMP_CAL_ADC4_DEFAULT 651
 
-#define TEMP_CAL_Y0_DEFAULT 127
-#define TEMP_CAL_Y1_DEFAULT 255
-#define TEMP_CAL_Y2_DEFAULT 370
-#define TEMP_CAL_Y3_DEFAULT 419
-#define TEMP_CAL_Y4_DEFAULT 420
+#define TEMP_CAL_TEMP0_DEFAULT 127
+#define TEMP_CAL_TEMP1_DEFAULT 255
+#define TEMP_CAL_TEMP2_DEFAULT 370
+#define TEMP_CAL_TEMP3_DEFAULT 419
+#define TEMP_CAL_TEMP4_DEFAULT 420
 
 #define TEMP_AVERAGES_DEFAULT 250L
 #define TEMP_REACHED_MARGIN 3

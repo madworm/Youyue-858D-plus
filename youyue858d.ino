@@ -108,18 +108,18 @@ CPARAM temp_averages = { 100, 999, TEMP_AVERAGES_DEFAULT, TEMP_AVERAGES_DEFAULT,
 CPARAM slp_timeout = { 0, 30, SLP_TIMEOUT_DEFAULT, SLP_TIMEOUT_DEFAULT, 16, 17 };
 CPARAM fan_only = { 0, 1, 0, 0, 26, 27 };
 CPARAM display_adc_raw = { 0, 1, 0, 0, 28, 29 };
-CPARAM cal_x[] = {
-                   { 0, 999, TEMP_CAL_X0_DEFAULT, TEMP_CAL_X0_DEFAULT, 30, 31 },
-                   { 0, 999, TEMP_CAL_X1_DEFAULT, TEMP_CAL_X1_DEFAULT, 32, 33 },
-                   { 0, 999, TEMP_CAL_X2_DEFAULT, TEMP_CAL_X2_DEFAULT, 34, 35 },
-                   { 0, 999, TEMP_CAL_X3_DEFAULT, TEMP_CAL_X3_DEFAULT, 36, 37 },
-                   { 0, 999, TEMP_CAL_X4_DEFAULT, TEMP_CAL_X4_DEFAULT, 38, 39 }  };
-CPARAM cal_y[] = {
-                   { 0, 999, TEMP_CAL_Y0_DEFAULT, TEMP_CAL_Y0_DEFAULT, 40, 41 },
-                   { 0, 999, TEMP_CAL_Y1_DEFAULT, TEMP_CAL_Y1_DEFAULT, 42, 43 },
-                   { 0, 999, TEMP_CAL_Y2_DEFAULT, TEMP_CAL_Y2_DEFAULT, 44, 45 },
-                   { 0, 999, TEMP_CAL_Y3_DEFAULT, TEMP_CAL_Y3_DEFAULT, 46, 47 },
-                   { 0, 999, TEMP_CAL_Y4_DEFAULT, TEMP_CAL_Y4_DEFAULT, 48, 49 }  };
+CPARAM cal_adc[] = {
+                   { 0, 999, TEMP_CAL_ADC0_DEFAULT, TEMP_CAL_ADC0_DEFAULT, 30, 31 },
+                   { 0, 999, TEMP_CAL_ADC1_DEFAULT, TEMP_CAL_ADC1_DEFAULT, 32, 33 },
+                   { 0, 999, TEMP_CAL_ADC2_DEFAULT, TEMP_CAL_ADC2_DEFAULT, 34, 35 },
+                   { 0, 999, TEMP_CAL_ADC3_DEFAULT, TEMP_CAL_ADC3_DEFAULT, 36, 37 },
+                   { 0, 999, TEMP_CAL_ADC4_DEFAULT, TEMP_CAL_ADC4_DEFAULT, 38, 39 }  };
+CPARAM cal_temp[] = {
+                   { 0, 999, TEMP_CAL_TEMP0_DEFAULT, TEMP_CAL_TEMP0_DEFAULT, 40, 41 },
+                   { 0, 999, TEMP_CAL_TEMP1_DEFAULT, TEMP_CAL_TEMP1_DEFAULT, 42, 43 },
+                   { 0, 999, TEMP_CAL_TEMP2_DEFAULT, TEMP_CAL_TEMP2_DEFAULT, 44, 45 },
+                   { 0, 999, TEMP_CAL_TEMP3_DEFAULT, TEMP_CAL_TEMP3_DEFAULT, 46, 47 },
+                   { 0, 999, TEMP_CAL_TEMP4_DEFAULT, TEMP_CAL_TEMP4_DEFAULT, 48, 49 }  };
 
 #ifdef CURRENT_SENSE_MOD
 CPARAM fan_current_min = { 0, 999, FAN_CURRENT_MIN_DEFAULT, FAN_CURRENT_MIN_DEFAULT, 22, 23 };
@@ -383,14 +383,16 @@ int main(void)
 #endif
 				}
 				else if (menuitem==1) { // CAL
-					char parameter_string[4] = "X-0";
-					for(unsigned char i=0; i<5; i++) {
-						parameter_string[2]=i+48;
-						parameter_string[0]='X';
-						change_config_parameter(&cal_x[i], parameter_string);
-						parameter_string[0]='Y';
-						change_config_parameter(&cal_y[i], parameter_string);
-					}
+					change_config_parameter(&cal_adc[0], "AD0");
+					change_config_parameter(&cal_adc[1], "AD1");
+					change_config_parameter(&cal_adc[2], "AD2");
+					change_config_parameter(&cal_adc[3], "AD3");
+					change_config_parameter(&cal_adc[4], "AD4");
+					change_config_parameter(&cal_temp[0], "T0");
+					change_config_parameter(&cal_temp[1], "T1");
+					change_config_parameter(&cal_temp[2], "T2");
+					change_config_parameter(&cal_temp[3], "T3");
+					change_config_parameter(&cal_temp[4], "T4");
 				}
 			} // end menu selection
 			else {                                                  // FAN only toggle
@@ -569,16 +571,16 @@ void setup_858D(void)
 	eep_load(&fan_speed_min);
 	eep_load(&fan_speed_max);
 #endif
-	eep_load(&cal_x[0]);
-	eep_load(&cal_x[1]);
-	eep_load(&cal_x[2]);
-	eep_load(&cal_x[3]);
-	eep_load(&cal_x[4]);
-	eep_load(&cal_y[0]);
-	eep_load(&cal_y[1]);
-	eep_load(&cal_y[2]);
-	eep_load(&cal_y[3]);
-	eep_load(&cal_y[4]);
+	eep_load(&cal_adc[0]);
+	eep_load(&cal_adc[1]);
+	eep_load(&cal_adc[2]);
+	eep_load(&cal_adc[3]);
+	eep_load(&cal_adc[4]);
+	eep_load(&cal_temp[0]);
+	eep_load(&cal_temp[1]);
+	eep_load(&cal_temp[2]);
+	eep_load(&cal_temp[3]);
+	eep_load(&cal_temp[4]);
 }
 
 // piecewise interpolation - maps adc into temp values
@@ -586,14 +588,14 @@ uint16_t piecewise_map(uint16_t _adc)
 {
 	unsigned char section=0;
 	for(unsigned char j=1; j<5-1; j++) { // find section
-		if (_adc >= (uint16_t) cal_x[j].value)
+		if (_adc >= (uint16_t) cal_adc[j].value)
 			section++;
 	}
 	return (uint16_t) map(_adc,
-		cal_x[section].value,
-		cal_x[section+1].value,
-		cal_y[section].value,
-		cal_y[section+1].value );
+		cal_adc[section].value,
+		cal_adc[section+1].value,
+		cal_temp[section].value,
+		cal_temp[section+1].value );
 }
 
 void clear_display(void)
