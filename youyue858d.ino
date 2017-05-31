@@ -1,3 +1,5 @@
+#include <Wire.h>
+
 /*
  * This is a custom firmware for my 'Youyue 858D+' hot-air soldering station.
  * It may or may not be useful to you, always double check if you use it.
@@ -56,9 +58,9 @@
  *
  */
 
-#define FW_MAJOR_V 1
-#define FW_MINOR_V_A 4
-#define FW_MINOR_V_B 6
+#define FW_MAJOR_V 0
+#define FW_MINOR_V_A 0
+#define FW_MINOR_V_B 1
 /*
  * PC5: FAN-speed (A5 in Arduino lingo) (OK)
  * PC3: TIP122.base --> FAN (OK)
@@ -106,6 +108,18 @@ CPARAM temp_averages = { 100, 999, TEMP_AVERAGES_DEFAULT, TEMP_AVERAGES_DEFAULT,
 CPARAM slp_timeout = { 0, 30, SLP_TIMEOUT_DEFAULT, SLP_TIMEOUT_DEFAULT, 16, 17 };
 CPARAM fan_only = { 0, 1, 0, 0, 26, 27 };
 CPARAM display_adc_raw = { 0, 1, 0, 0, 28, 29 };
+CPARAM cal_adc[] = {
+                   { 0, 999, TEMP_CAL_ADC0_DEFAULT, TEMP_CAL_ADC0_DEFAULT, 30, 31 },
+                   { 0, 999, TEMP_CAL_ADC1_DEFAULT, TEMP_CAL_ADC1_DEFAULT, 32, 33 },
+                   { 0, 999, TEMP_CAL_ADC2_DEFAULT, TEMP_CAL_ADC2_DEFAULT, 34, 35 },
+                   { 0, 999, TEMP_CAL_ADC3_DEFAULT, TEMP_CAL_ADC3_DEFAULT, 36, 37 },
+                   { 0, 999, TEMP_CAL_ADC4_DEFAULT, TEMP_CAL_ADC4_DEFAULT, 38, 39 }  };
+CPARAM cal_temp[] = {
+                   { 0, 999, TEMP_CAL_TEMP0_DEFAULT, TEMP_CAL_TEMP0_DEFAULT, 40, 41 },
+                   { 0, 999, TEMP_CAL_TEMP1_DEFAULT, TEMP_CAL_TEMP1_DEFAULT, 42, 43 },
+                   { 0, 999, TEMP_CAL_TEMP2_DEFAULT, TEMP_CAL_TEMP2_DEFAULT, 44, 45 },
+                   { 0, 999, TEMP_CAL_TEMP3_DEFAULT, TEMP_CAL_TEMP3_DEFAULT, 46, 47 },
+                   { 0, 999, TEMP_CAL_TEMP4_DEFAULT, TEMP_CAL_TEMP4_DEFAULT, 48, 49 }  };
 
 #ifdef CURRENT_SENSE_MOD
 CPARAM fan_current_min = { 0, 999, FAN_CURRENT_MIN_DEFAULT, FAN_CURRENT_MIN_DEFAULT, 22, 23 };
@@ -125,10 +139,20 @@ volatile uint8_t key_rpt;	// key long press and repeat
 
 volatile uint8_t display_blink;
 
+#ifdef DEBUG
+// prevent repeated output of same string
+String laststring;
+uint16_t lastnumber;
+#endif
+
 int main(void)
 {
 	init();			// make sure the Arduino-specific stuff is up and running (timers... see 'wiring.c')
 
+#ifdef DEBUG
+  Serial.begin(115200);
+#endif
+ 
 	setup_858D();
 
 #ifdef DISPLAY_MCUSR
@@ -157,17 +181,15 @@ int main(void)
 #endif
 
 	show_firmware_version();
+#ifdef USE_WATCHDOG
 	test_F_CPU_with_watchdog();
+#endif
 	fan_test();
 
 #ifdef USE_WATCHDOG
 	watchdog_on();
 #endif
 
-#ifdef DEBUG
-	Serial.begin(2400);
-	Serial.println("\nRESET");
-#endif
 
 	while (1) {
 #ifdef DEBUG
@@ -177,6 +199,9 @@ int main(void)
 		static int32_t temp_accu = 0;
 		static int16_t temp_average = 0;
 		static int16_t temp_average_previous = 0;
+
+		static int32_t adc_raw_accu=0;
+		static int16_t adc_raw_average=0;
 
 		static int32_t button_input_time = 0;
 
@@ -194,11 +219,14 @@ int main(void)
 
 		uint16_t adc_raw = analogRead(A0);	// need raw value later, store it here and avoid 2nd ADC read
 
-		temp_inst = adc_raw + temp_offset_corr.value;	// approx. temp in °C
+//		temp_inst = adc_raw + temp_offset_corr.value;   // approx. temp in °C
+//		temp_inst = adc_raw*0.42 + temp_offset_corr.value; // approx. temp in °C
+		temp_inst = piecewise_map(adc_raw);
 
 		if (temp_inst < 0) {
 			temp_inst = 0;
 		}
+   
 		// pid loop / heater handling
 		if (fan_only.value == 1 || REEDSW_CLOSED) {
 			HEATER_OFF;
@@ -256,12 +284,18 @@ int main(void)
 		temp_accu += temp_inst;
 		temp_avg_ctr++;
 
+		adc_raw_accu += adc_raw; // re-uses the counter temp_avg_ctr
+
 		if (temp_avg_ctr == (uint16_t) (temp_averages.value)) {
 			temp_average_previous = temp_average;
 			temp_average = temp_accu / temp_averages.value;
 			temp_accu = 0;
 			temp_avg_ctr = 0;
+
+			adc_raw_average = adc_raw_accu / temp_averages.value;
+			adc_raw_accu = 0;
 		}
+
 		// fan/cradle handling
 		if (temp_average >= FAN_ON_TEMP) {
 			FAN_ON;
@@ -272,6 +306,7 @@ int main(void)
 		} else if (REEDSW_OPEN) {
 			FAN_ON;
 		}
+
 		// menu key handling
 		if (get_key_short(1 << KEY_UP)) {
 			button_input_time = millis();
@@ -310,23 +345,57 @@ int main(void)
 			watchdog_off();
 #endif
 			delay(uint16_t(20.48 * (REPEAT_START - 3) + 1));
-			if (get_key_long_r(1 << KEY_UP | 1 << KEY_DOWN)) {
-				change_config_parameter(&p_gain, "P");
-				change_config_parameter(&i_gain, "I");
-				change_config_parameter(&d_gain, "D");
-				change_config_parameter(&i_thresh, "ITH");
-				change_config_parameter(&temp_offset_corr, "TOF");
-				change_config_parameter(&temp_averages, "AVG");
-				change_config_parameter(&slp_timeout, "SLP");
-				change_config_parameter(&display_adc_raw, "ADC");
+			
+			if (get_key_long_r(1 << KEY_UP | 1 << KEY_DOWN)) {       // Menu selection
+				int menuitem=0;
+				display_string("CFG");
+				delay(500);
+				
+				while (1) {
+					if (menuitem==0)
+						display_string("CFG");
+					else if (menuitem==1)
+						display_string("CAL");
+					delay(100);
+					if(get_key_short(1 << KEY_UP)) menuitem++;
+					if(get_key_short(1 << KEY_DOWN)) menuitem--;
+					if (menuitem>2) menuitem=2;
+					if (menuitem<0) menuitem=0;
+					if (get_key_common(1 << KEY_UP | 1 << KEY_DOWN))
+						break;
+				}
+
+        if (menuitem==0) { // CFG
+					change_config_parameter(&p_gain, "P");
+					change_config_parameter(&i_gain, "I");
+					change_config_parameter(&d_gain, "D");
+					change_config_parameter(&i_thresh, "ITH");
+					change_config_parameter(&temp_offset_corr, "TOF");
+					change_config_parameter(&temp_averages, "AVG");
+					change_config_parameter(&slp_timeout, "SLP");
+					change_config_parameter(&display_adc_raw, "ADC");
 #ifdef CURRENT_SENSE_MOD
-				change_config_parameter(&fan_current_min, "FCL");
-				change_config_parameter(&fan_current_max, "FCH");
+					change_config_parameter(&fan_current_min, "FCL");
+					change_config_parameter(&fan_current_max, "FCH");
 #else
-				change_config_parameter(&fan_speed_min, "FSL");
-				change_config_parameter(&fan_speed_max, "FSH");
+					change_config_parameter(&fan_speed_min, "FSL");
+					change_config_parameter(&fan_speed_max, "FSH");
 #endif
-			} else {
+				}
+				else if (menuitem==1) { // CAL
+					change_config_parameter(&cal_adc[0], "AD0");
+					change_config_parameter(&cal_adc[1], "AD1");
+					change_config_parameter(&cal_adc[2], "AD2");
+					change_config_parameter(&cal_adc[3], "AD3");
+					change_config_parameter(&cal_adc[4], "AD4");
+					change_config_parameter(&cal_temp[0], "T0");
+					change_config_parameter(&cal_temp[1], "T1");
+					change_config_parameter(&cal_temp[2], "T2");
+					change_config_parameter(&cal_temp[3], "T3");
+					change_config_parameter(&cal_temp[4], "T4");
+				}
+			} // end menu selection
+			else {                                                  // FAN only toggle
 				get_key_press(1 << KEY_UP | 1 << KEY_DOWN);	// clear inp state
 				fan_only.value ^= 0x01;
 				temp_setpoint_saved = 0;
@@ -339,6 +408,7 @@ int main(void)
 			watchdog_on();
 #endif
 		}
+   
 		// security first!
 		if (temp_average >= MAX_TEMP_ERR) {
 			// something might have gone terribly wrong
@@ -361,11 +431,12 @@ int main(void)
 				display_string("*C");
 				delay(1000);
 				display_string("ERR");
-				delay(2000);
-				clear_display();
+				delay(1000);
+				display_number(temp_average);
 				delay(1000);
 			}
 		}
+   
 		// display output
 		if ((millis() - button_input_time) < SHOW_SETPOINT_TIMEOUT) {
 			if (display_blink < 5) {
@@ -393,7 +464,7 @@ int main(void)
 					display_number(temp_average);
 				}
 			} else if (display_adc_raw.value == 1) {
-				display_number(adc_raw);
+				display_number(adc_raw_average);
 			} else if (abs((int16_t) (temp_average) - (int16_t) (temp_setpoint.value)) < TEMP_REACHED_MARGIN) {
 				display_number(temp_setpoint.value);	// avoid showing insignificant fluctuations on the display (annoying)
 			} else {
@@ -420,7 +491,9 @@ int main(void)
 
 #ifdef DEBUG
 		int32_t stop_time = micros();
-		Serial.println(stop_time - start_time);
+//		Serial.println(stop_time - start_time);
+//		Serial.print(",");
+//		Serial.print(stop_time - start_time);
 #endif
 	}
 
@@ -440,8 +513,10 @@ void setup_858D(void)
 	FAN_OFF;
 	DDRC |= _BV(PC3);	// set as output (FAN control)
 
+#ifndef DEBUG // disabling 7segs in favor of serial data
 	DDRD |= 0xFF;		// all as outputs (7-seg segments)
 	DDRB |= (_BV(PB0) | _BV(PB6) | _BV(PB7));	// 7-seg digits 1,2,3
+#endif
 
 #ifdef CURRENT_SENSE_MOD
 	DDRC &= ~_BV(PC2);	// set as input
@@ -496,6 +571,31 @@ void setup_858D(void)
 	eep_load(&fan_speed_min);
 	eep_load(&fan_speed_max);
 #endif
+	eep_load(&cal_adc[0]);
+	eep_load(&cal_adc[1]);
+	eep_load(&cal_adc[2]);
+	eep_load(&cal_adc[3]);
+	eep_load(&cal_adc[4]);
+	eep_load(&cal_temp[0]);
+	eep_load(&cal_temp[1]);
+	eep_load(&cal_temp[2]);
+	eep_load(&cal_temp[3]);
+	eep_load(&cal_temp[4]);
+}
+
+// piecewise interpolation - maps adc into temp values
+uint16_t piecewise_map(uint16_t _adc)
+{
+	unsigned char section=0;
+	for(unsigned char j=1; j<5-1; j++) { // find section
+		if (_adc >= (uint16_t) cal_adc[j].value)
+			section++;
+	}
+	return (uint16_t) map(_adc,
+		cal_adc[section].value,
+		cal_adc[section+1].value,
+		cal_temp[section].value,
+		cal_temp[section+1].value );
 }
 
 void clear_display(void)
@@ -521,6 +621,15 @@ void display_string(const char *string)
 
 	uint8_t ctr;
 
+#ifdef DEBUG
+	// display_string on serial
+	if (laststring != string) { // stop repeated output
+		Serial.write(',');
+		Serial.write(string);
+	}
+	laststring = string;
+	lastnumber = 999;
+#else
 	for (ctr = 0; ctr <= 2; ctr++) {
 		// read the first 3 characters of the string
 		if (string[ctr] == '\0') {
@@ -531,6 +640,7 @@ void display_string(const char *string)
 	}
 	framebuffer.changed = 1;
 	fb_update();
+#endif
 }
 
 void change_config_parameter(CPARAM * param, const char *string)
@@ -580,6 +690,12 @@ void eep_save(CPARAM * param)
 	}
 	EEPROM.update(param->eep_addr_high, highByte(param->value));
 	EEPROM.update(param->eep_addr_low, lowByte(param->value));
+#ifdef DEBUG
+	Serial.print(",eep_save(");
+	Serial.print(param->eep_addr_low, DEC);
+	Serial.print(")=");
+	Serial.print(param->value, DEC);
+#endif
 }
 
 void eep_load(CPARAM * param)
@@ -594,10 +710,20 @@ void eep_load(CPARAM * param)
 		// reset to sensible value
 		param->value = param->value_default;
 	}
+#ifdef DEBUG
+	Serial.print(",eep_load(");
+	Serial.print(param->eep_addr_low, DEC);
+	Serial.print(")=");
+	Serial.print(param->value, DEC);
+#endif
 }
 
 void restore_default_conf(void)
 {
+	display_string("RES"); // show and tell that cfg was replaced
+	delay(500);
+	display_string("CFG");
+	delay(500);
 	p_gain.value = p_gain.value_default;
 	i_gain.value = i_gain.value_default;
 	d_gain.value = d_gain.value_default;
@@ -665,6 +791,14 @@ void clear_eeprom_saved_dot(void)
 
 void display_number(int16_t number)
 {
+#ifdef DEBUG
+	if (number != lastnumber) {
+		Serial.write(',');
+		Serial.print(number,DEC);
+	}
+	lastnumber = number;
+	laststring = "";
+#else
 	if (number < 0) {
 		framebuffer.dot[0] = 1;
 		framebuffer.dot[1] = 1;
@@ -683,6 +817,7 @@ void display_number(int16_t number)
 	framebuffer.digit[2] = (uint8_t) (number % 10);
 	framebuffer.changed = 1;
 	fb_update();
+#endif
 }
 
 void display_char(uint8_t digit, uint8_t character, uint8_t dot)
@@ -690,33 +825,43 @@ void display_char(uint8_t digit, uint8_t character, uint8_t dot)
 	uint8_t portout = 0xFF;
 
 	switch (character) {
-	case 0:
+	case '0':
+	case 0: // hmm, case 0 is the null termination of a string..
 		portout = (uint8_t) (~0xAF);	// activate segments for displaying a '0'
 		break;
+	case '1':
 	case 1:
 		portout = (uint8_t) (~0xA0);	// '1'
 		break;
+	case '2':
 	case 2:
 		portout = (uint8_t) (~0xC7);	// '2'
 		break;
+	case '3':
 	case 3:
 		portout = (uint8_t) (~0xE5);	// '3'
 		break;
+	case '4':
 	case 4:
 		portout = (uint8_t) (~0xE8);	// '4'
 		break;
+	case '5':
 	case 5:
 		portout = (uint8_t) (~0x6D);	// '5'
 		break;
+	case '6':
 	case 6:
 		portout = (uint8_t) (~0x6F);	// '6'
 		break;
+	case '7':
 	case 7:
 		portout = (uint8_t) (~0xA1);	// '7'
 		break;
+	case '8':
 	case 8:
 		portout = (uint8_t) (~0xEF);	// '8'
 		break;
+	case '9':
 	case 9:
 		portout = (uint8_t) (~0xE9);	// '9'
 		break;
@@ -772,10 +917,16 @@ void display_char(uint8_t digit, uint8_t character, uint8_t dot)
 		portout = (uint8_t) (~0x4E);	// 't'
 		break;
 	case 'U':
-		portout = (uint8_t) (~0x26);	// 'u'          
+		portout = (uint8_t) (~0x26);	// 'u'
 		break;
 	case 'V':
 		portout = (uint8_t) (~0x26);	// 'v'
+		break;
+	case 'X':
+		portout = (uint8_t) (~0xEA);	// 'X'
+		break;
+	case 'Y':
+		portout = (uint8_t) (~0xE8);	// 'y'
 		break;
 	case '*':
 		portout = (uint8_t) (~0xC9);	// '°'
@@ -800,14 +951,11 @@ void fan_test(void)
 
 	// if the wand is not in the cradle when powered up, go into a safe mode
 	// and display an error
-	while (!REEDSW_CLOSED) {
-		display_string("CRA");
-		delay(1000);
-		display_string("DLE");
-		delay(2000);
-		clear_display();
-		delay(1000);
-	}
+	wand_in_cradle_test();
+
+#ifdef NO_FAN_TEST
+	return;
+#endif
 
 #ifdef CURRENT_SENSE_MOD
 	uint16_t fan_current;
@@ -826,7 +974,7 @@ void fan_test(void)
 #endif				//CURRENT_SENSE_MOD
 		// the fan is not working as it should
 		FAN_OFF;
-		while (1) {
+		//while (1) { // a software trap for those who has no fan current sense
 			display_string("FAN");
 			delay(1000);
 #ifdef CURRENT_SENSE_MOD
@@ -837,11 +985,24 @@ void fan_test(void)
 			delay(2000);
 			clear_display();
 			delay(1000);
-		}
+		//}
 	}
 
 	FAN_OFF;
 
+}
+
+void wand_in_cradle_test(void)
+{
+	while (!REEDSW_CLOSED) {
+		FAN_ON;	// Cool the heater. The program often ends here after a restart.
+		display_string("CRA");
+		delay(300);
+		display_string("DLE");
+		delay(300);
+		display_number(analogRead(A0));
+		delay(500);
+	}
 }
 
 void show_firmware_version(void)
@@ -939,6 +1100,7 @@ ISR(TIMER1_COMPB_vect)
 	// all segments OFF (set HIGH, as current sinks)
 	SEGS_OFF;
 
+#ifndef DEBUG
 	switch (digit / 8) {
 	case 0:
 		DIG0_ON;	// turn on digit #0 (from right)
@@ -964,6 +1126,7 @@ ISR(TIMER1_COMPB_vect)
 		DIG2_OFF;
 		break;
 	}
+#endif
 
 	if (OCR1B == 640) {
 		OCR1B = 8;
