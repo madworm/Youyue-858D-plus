@@ -182,7 +182,7 @@ int main(void)
 
 	show_firmware_version();
 #ifdef USE_WATCHDOG
-  test_F_CPU_with_watchdog();
+	test_F_CPU_with_watchdog();
 #endif
 	fan_test();
 
@@ -825,43 +825,43 @@ void display_char(uint8_t digit, uint8_t character, uint8_t dot)
 	uint8_t portout = 0xFF;
 
 	switch (character) {
-  case '0':
+	case '0':
 	case 0: // hmm, case 0 is the null termination of a string..
 		portout = (uint8_t) (~0xAF);	// activate segments for displaying a '0'
 		break;
-  case '1':
+	case '1':
 	case 1:
 		portout = (uint8_t) (~0xA0);	// '1'
 		break;
-  case '2':
+	case '2':
 	case 2:
 		portout = (uint8_t) (~0xC7);	// '2'
 		break;
-  case '3':
+	case '3':
 	case 3:
 		portout = (uint8_t) (~0xE5);	// '3'
 		break;
-  case '4':
+	case '4':
 	case 4:
 		portout = (uint8_t) (~0xE8);	// '4'
 		break;
-  case '5':
+	case '5':
 	case 5:
 		portout = (uint8_t) (~0x6D);	// '5'
 		break;
-  case '6':
+	case '6':
 	case 6:
 		portout = (uint8_t) (~0x6F);	// '6'
 		break;
-  case '7':
+	case '7':
 	case 7:
 		portout = (uint8_t) (~0xA1);	// '7'
 		break;
-  case '8':
+	case '8':
 	case 8:
 		portout = (uint8_t) (~0xEF);	// '8'
 		break;
-  case '9':
+	case '9':
 	case 9:
 		portout = (uint8_t) (~0xE9);	// '9'
 		break;
@@ -995,6 +995,7 @@ void fan_test(void)
 void wand_in_cradle_test(void)
 {
 	while (!REEDSW_CLOSED) {
+		FAN_ON;	// Cool the heater. The program often ends here after a restart.
 		display_string("CRA");
 		delay(300);
 		display_string("DLE");
