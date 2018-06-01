@@ -17,7 +17,7 @@
  */
 
 //#define DEBUG
-
+#define KEYBEEP
 //#define CURRENT_SENSE_MOD
 
 #define USE_WATCHDOG
@@ -81,6 +81,8 @@ uint8_t get_key_common_l(uint8_t key_mask);
 #define FAN_ON  ( PORTC &= ~_BV(PC3) )
 #define FAN_IS_ON ( !(PINC & _BV(PC3)) )
 #define FAN_IS_OFF ( PINC & _BV(PC3) )
+#define FAN_MAX_ON  ( PORTB |= _BV(PB3) )
+#define FAN_MAX_OFF ( PORTB &= ~_BV(PB3) )
 
 #define DIG0_OFF ( PORTB &= ~_BV(PB0) )
 #define DIG1_OFF ( PORTB &= ~_BV(PB7) )
@@ -119,15 +121,17 @@ uint8_t get_key_common_l(uint8_t key_mask);
 #define I_GAIN_SCALING 10000.0
 #define D_GAIN_SCALING 25.0
 
-#define TEMP_OFFSET_CORR_DEFAULT 33
-#define TEMP_SETPOINT_DEFAULT 75
+#define TEMP_OFFSET_CORR_DEFAULT 0
+#define TEMP_MULTIPLICATOR_DEFAULT 10
+#define TEMP_SETPOINT_DEFAULT 100
 
 #define TEMP_AVERAGES_DEFAULT 250L
 #define TEMP_REACHED_MARGIN 3
 
-#define MAX_TEMP_ERR 550L
+#define MAX_TEMP_ERR 500L //550
 #define SAFE_TO_TOUCH_TEMP 40
 
+#define FAN_OFF_DELAY_DEFAULT 15
 #define FAN_OFF_TEMP 45
 #define FAN_ON_TEMP 60
 #define FAN_OFF_TEMP_FANONLY (SAFE_TO_TOUCH_TEMP - 2)
@@ -137,8 +141,8 @@ uint8_t get_key_common_l(uint8_t key_mask);
 // Continue reading below...
 //
 
-#define FAN_SPEED_MIN_DEFAULT 150UL
-#define FAN_SPEED_MAX_DEFAULT 360UL
+#define FAN_SPEED_MIN_DEFAULT 120UL
+#define FAN_SPEED_MAX_DEFAULT 320UL
 
 // 
 // Good starting values with BLDC FAN-speed mod
